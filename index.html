@@ -476,7 +476,7 @@ function render(){
     card.className = 'card' + (s.floor==='2階'?' f2':'') + (hit?' hit':'') + (miss?' hidden':'');
     card.innerHTML =
       `<div class="num">${s.no}</div>
-       <img class="thumb" src="写真/_thumb/${s.file}" loading="lazy">
+       <img class="thumb" src="写真/thumb/${s.file}" loading="lazy">
        <div><div class="nm">${s.name}</div><div class="fl">${s.floor}</div></div>`;
     card.onclick = ()=>openSheet(idx);
     cards.appendChild(card);
