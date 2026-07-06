@@ -2,47 +2,72 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>みどり造園 社内マップ（資材置き場）</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>みどり造園 社内マップ（スマホ横）</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  body { font-family:"Yu Gothic UI","Hiragino Sans",Meiryo,sans-serif; background:#f0f4ef; color:#243324; }
+  html,body { height:100%; }
+  body { font-family:"Yu Gothic UI","Hiragino Sans",Meiryo,sans-serif; background:#dfe3da; color:#243324;
+    overflow-x:hidden; }
 
-  header { background:#2e5d34; color:#fff; padding:10px 14px; position:sticky; top:0; z-index:50; }
-  header h1 { font-size:17px; }
-  header p { font-size:11px; opacity:.85; margin-top:2px; }
+  /* ===== 透過フローティングタイトル（地図の上に薄く重ねる・邪魔にならない） ===== */
+  .titlebar {
+    position:fixed; top:8px; left:8px; z-index:60;
+    display:flex; align-items:center; gap:8px;
+    background:rgba(46,93,52,.55); color:#fff; backdrop-filter:blur(4px);
+    -webkit-backdrop-filter:blur(4px);
+    padding:6px 12px; border-radius:20px; box-shadow:0 1px 6px rgba(0,0,0,.25);
+    font-size:13px; font-weight:bold; cursor:pointer; user-select:none;
+    transition:opacity .2s, transform .2s; max-width:calc(100vw - 16px);
+  }
+  .titlebar .sub { font-size:10px; font-weight:normal; opacity:.9; }
+  .titlebar.min { opacity:.5; }
+  .titlebar.min .txt { display:none; }
 
-  .toolbar { display:flex; gap:8px; padding:10px 12px; align-items:center; flex-wrap:wrap; }
+  /* ===== フローティング操作バー（右上・コンパクト・半透明） ===== */
+  .toolbar {
+    position:fixed; top:8px; right:8px; z-index:60;
+    display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end;
+    max-width:calc(100vw - 16px);
+  }
   .toolbar input[type="text"] {
-    flex:1; min-width:150px; padding:9px 12px; border:2px solid #9dbb9d; border-radius:20px;
-    font-size:15px; outline:none; background:#fff;
+    width:150px; padding:7px 12px; border:none; border-radius:18px;
+    font-size:14px; outline:none; background:rgba(255,255,255,.9); box-shadow:0 1px 4px rgba(0,0,0,.2);
   }
-  .toolbar input[type="text"]:focus { border-color:#2e5d34; }
   .modebtn {
-    font-size:12px; padding:8px 12px; border-radius:20px; border:2px solid #9dbb9d;
-    background:#fff; color:#2e5d34; cursor:pointer; user-select:none;
+    font-size:12px; padding:7px 11px; border-radius:18px; border:none;
+    background:rgba(255,255,255,.9); color:#2e5d34; cursor:pointer; user-select:none;
+    box-shadow:0 1px 4px rgba(0,0,0,.2); white-space:nowrap;
   }
-  .modebtn.on { background:#c8a24a; border-color:#c8a24a; color:#fff; }
+  .modebtn.on { background:#c8a24a; color:#fff; }
 
-  .legend { display:flex; gap:14px; padding:0 14px 8px; font-size:11px; color:#5a6e5a; align-items:center; flex-wrap:wrap; }
+  /* ===== フローティング凡例（左下・半透明） ===== */
+  .legend {
+    position:fixed; left:8px; bottom:8px; z-index:55;
+    display:flex; gap:12px; padding:5px 12px; font-size:11px; color:#243324; align-items:center;
+    background:rgba(255,255,255,.82); border-radius:16px; box-shadow:0 1px 5px rgba(0,0,0,.18);
+    backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);
+  }
   .legend span { display:inline-flex; align-items:center; gap:4px; }
-  .legend i { width:13px; height:13px; border-radius:50%; display:inline-block; border:2px solid #fff;
+  .legend i { width:12px; height:12px; border-radius:50%; display:inline-block; border:2px solid #fff;
     box-shadow:0 0 2px rgba(0,0,0,.4); }
   .legend i.r{ background:#d84a3a;} .legend i.b{ background:#1e78c8;} .legend i.g{ background:#c8a24a;}
 
-  /* ===== 地図 ===== */
-  .map-wrap { margin:0 12px 10px; position:relative; border-radius:12px; overflow:hidden;
-    box-shadow:0 2px 8px rgba(0,0,0,.15); background:#e8e4da; }
-  .map-inner { position:relative; width:100%; }
-  .map-inner svg { width:100%; display:block; }
-  .map-inner img.aerial { width:100%; display:none; }
+  /* ===== 地図（横画面で高さいっぱいに収める） ===== */
+  .map-wrap { display:flex; justify-content:center; align-items:center; min-height:100vh;
+    min-height:100dvh; padding:4px; }
+  .map-inner { position:relative; width:100%;
+    max-width:calc(96vh * 1.319); max-width:calc(96dvh * 1.319); /* 950/720=1.319 */
+  }
+  .map-inner svg { width:100%; display:block; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.2); }
+  .map-inner img.aerial { width:100%; display:none; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.2); }
   body.photo .map-inner svg { display:none; }
   body.photo .map-inner img.aerial { display:block; }
 
   .pin { position:absolute; transform:translate(-50%,-50%); cursor:pointer; z-index:5;
     display:flex; flex-direction:column; align-items:center; }
   .pin .dot {
-    width:23px; height:23px; border-radius:50%;
+    width:22px; height:22px; border-radius:50%;
     background:#d84a3a; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.55);
     display:flex; align-items:center; justify-content:center;
     color:#fff; font-size:11px; font-weight:bold;
@@ -56,15 +81,11 @@
   body:not(.showlbl) .pin .lbl { display:none; }
   .pin.hit .dot { background:#c8a24a; transform:scale(1.15); }
   .pin.dim { opacity:.25; }
-  .pin.active .dot { outline:3px solid #ffd97a; }
 
-  .hint { margin:0 14px 10px; font-size:11px; color:#5a6e5a; }
-
-  /* ===== 場所一覧 ===== */
-  .list { padding:0 12px 90px; }
-  .list h2 { font-size:13px; color:#2e5d34; margin:8px 2px 6px; }
-  .cards { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-  @media (max-width:520px){ .cards { grid-template-columns:1fr; } }
+  /* ===== 場所一覧（地図の下・スクロールで表示） ===== */
+  .list { padding:14px 12px 40px; max-width:900px; margin:0 auto; }
+  .list h2 { font-size:14px; color:#2e5d34; margin:6px 2px 8px; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; }
   .card {
     background:#fff; border-radius:10px; padding:8px 10px; cursor:pointer;
     box-shadow:0 1px 4px rgba(0,0,0,.08); display:flex; align-items:center; gap:9px;
@@ -80,60 +101,44 @@
   .card.hidden { display:none; }
   .card .thumb { flex:none; width:42px; height:42px; border-radius:6px; object-fit:cover; }
 
-  /* ===== 詳細シート ===== */
-  .overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:90; display:none; }
-  .overlay.show { display:block; }
-  .sheet {
-    position:fixed; left:0; right:0; bottom:0; max-height:85vh; overflow-y:auto; z-index:100;
-    background:#fff; border-radius:16px 16px 0 0; padding:16px 16px 30px;
-    transform:translateY(105%); transition:transform .25s ease;
-    box-shadow:0 -4px 20px rgba(0,0,0,.3);
+  /* ===== 写真ビューア（拡大→全体→閉じる） ===== */
+  .viewer { position:fixed; inset:0; background:rgba(0,0,0,.92); z-index:200; display:none; }
+  .viewer.show { display:block; }
+  .viewer img.vimg {
+    position:absolute; top:0; left:0; width:100%; height:100%; cursor:pointer;
+    transition:none;
   }
-  .sheet.show { transform:translateY(0); }
-  .sheet .grip { width:44px; height:5px; border-radius:3px; background:#ccc; margin:0 auto 12px; }
-  .sheet h3 { font-size:19px; color:#2e5d34; display:flex; align-items:center; gap:8px; }
-  .sheet h3 .num { width:28px; height:28px; border-radius:50%; background:#d84a3a; color:#fff;
-    font-size:14px; display:inline-flex; align-items:center; justify-content:center; flex:none; }
-  .sheet h3.f2 .num { background:#1e78c8; }
-  .fbadge { display:inline-block; font-size:11px; font-weight:bold; padding:3px 12px; border-radius:12px;
-    margin:8px 0 10px; background:#d84a3a; color:#fff; }
-  .fbadge.f2 { background:#1e78c8; }
-  .sheet .photo { width:100%; border-radius:10px; display:block; cursor:zoom-in; background:#eee; }
-  .sheet h4 { font-size:13px; color:#2e5d34; margin:12px 0 5px; border-left:4px solid #c8a24a; padding-left:7px; }
-  .tags { display:flex; flex-wrap:wrap; gap:6px; }
-  .tag { background:#e6efe6; color:#2e5d34; font-size:13px; padding:5px 11px; border-radius:14px; }
-  .tag.hit { background:#c8a24a; color:#fff; font-weight:bold; }
-  .nav2 { display:flex; gap:8px; margin-top:14px; }
-  .nav2 button { flex:1; padding:10px 0; border-radius:20px; border:none; font-size:14px; cursor:pointer;
-    background:#e6efe6; color:#2e5d34; font-weight:bold; }
-  .closebtn { display:block; margin:10px auto 0; padding:9px 40px; border-radius:20px; border:none;
-    background:#2e5d34; color:#fff; font-size:14px; cursor:pointer; }
-
-  .bigview { position:fixed; inset:0; background:rgba(0,0,0,.9); z-index:300; display:none;
-    align-items:center; justify-content:center; }
-  .bigview.show { display:flex; }
-  .bigview img { max-width:96vw; max-height:92vh; border-radius:8px; }
-
-  @media (min-width:800px) {
-    .sheet { left:auto; right:20px; bottom:20px; width:440px; border-radius:16px; max-height:80vh; }
-    /* 右側のピンを押したら写真は左に出す（押した場所＝ボタンをよける） */
-    .sheet.leftside { left:20px; right:auto; }
-    header h1 { font-size:19px; }
+  .viewer img.vimg.zoom { object-fit:cover; }   /* 拡大＝画面いっぱい（端が切れる） */
+  .viewer img.vimg.fit  { object-fit:contain; } /* 全体＝写真全部が見える */
+  .vtop {
+    position:absolute; top:0; left:0; right:0; z-index:2;
+    display:flex; align-items:center; gap:10px; padding:10px 12px;
+    background:linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,0)); color:#fff; pointer-events:none;
   }
+  .vtop .vname { font-size:15px; font-weight:bold; flex:1; }
+  .vtop .vstate { font-size:11px; background:rgba(255,255,255,.22); padding:3px 10px; border-radius:12px; }
+  .vtop .vclose { pointer-events:auto; background:rgba(255,255,255,.25); border:none; color:#fff;
+    width:34px; height:34px; border-radius:50%; font-size:17px; cursor:pointer; }
+  .vnav {
+    position:absolute; top:50%; transform:translateY(-50%); z-index:2;
+    width:44px; height:64px; border:none; border-radius:10px;
+    background:rgba(255,255,255,.16); color:#fff; font-size:30px; cursor:pointer; line-height:1;
+  }
+  .vnav.prev { left:8px; } .vnav.next { right:8px; }
+  .vhint { position:absolute; bottom:14px; left:0; right:0; text-align:center; color:#fff;
+    font-size:12px; opacity:.85; pointer-events:none; z-index:2; }
 
   /* ===== A4印刷（縦）：1枚目=平面図、2枚目以降=場所一覧 ===== */
   @media print {
     @page { size: A4 portrait; margin: 10mm; }
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    body { background:#fff; }
-    .toolbar, .hint, .overlay, .sheet, .modebtn, .bigview, .legend { display:none !important; }
-    header { position:static; border-radius:0; }
+    body { background:#fff; overflow:visible; }
+    .toolbar, .titlebar, .legend, .viewer { display:none !important; }
+    .map-wrap { min-height:auto; page-break-after:always; }
+    .map-inner { max-width:100%; }
     body .pin .lbl { display:block !important; }
-    .map-wrap { margin:8px 0; box-shadow:none; border:1px solid #999; border-radius:0;
-      page-break-inside:avoid; page-break-after:always; }
     .pin.dim { opacity:1; }
     .pin.hit .dot { background:#d84a3a; transform:none; }
-    .list { padding:0; }
     .card { box-shadow:none; border:1px solid #bbb; page-break-inside:avoid; }
     .card.hidden { display:flex !important; }
     .card .thumb { display:none; }
@@ -142,22 +147,22 @@
 </head>
 <body class="showlbl">
 
-<header>
-  <h1>🌲 みどり造園 社内マップ（資材置き場）</h1>
-  <p>番号ピンを押すと写真と場所の名前が出ます／名前は仮です。良い呼び名があれば水野まで！</p>
-</header>
+<!-- 透過タイトル（タップで最小化して完全に地図の邪魔を消せる） -->
+<div class="titlebar" id="titlebar" onclick="this.classList.toggle('min')">
+  🌲<span class="txt">みどり造園 社内マップ<span class="sub">　名前は仮です／良い呼び名は水野まで</span></span>
+</div>
 
 <div class="toolbar">
-  <input type="text" id="q" placeholder="🔍 場所の名前で検索（例：更衣室・木材）">
-  <div class="modebtn" id="bgBtn" onclick="toggleBg()">📷 航空写真に切替</div>
-  <div class="modebtn on" id="lblBtn" onclick="toggleLbl()">🏷️ 名前ラベル</div>
-  <div class="modebtn" onclick="window.print()">🖨️ A4印刷</div>
+  <input type="text" id="q" placeholder="🔍 場所を検索">
+  <div class="modebtn" id="bgBtn" onclick="toggleBg()">📷 航空写真</div>
+  <div class="modebtn on" id="lblBtn" onclick="toggleLbl()">🏷️ 名前</div>
+  <div class="modebtn" onclick="window.print()">🖨️</div>
 </div>
 
 <div class="legend">
   <span><i class="r"></i>1階・屋外</span>
   <span><i class="b"></i>2階</span>
-  <span><i class="g"></i>検索ヒット</span>
+  <span><i class="g"></i>ヒット</span>
 </div>
 
 <div class="map-wrap">
@@ -383,25 +388,23 @@
   </div>
 </div>
 
-<div class="hint">※ピンの名前は「（仮）」です。写真をタップすると大きく見られます。「📷航空写真に切替」で実際の空撮とも見比べられます。</div>
-
 <div class="list">
-  <h2>📋 場所一覧（<span id="cnt">35</span>か所）</h2>
+  <h2>📋 場所一覧（<span id="cnt">35</span>か所）　タップで写真</h2>
   <div class="cards" id="cards"></div>
 </div>
 
-<div class="overlay" id="ov" onclick="closeSheet()"></div>
-<div class="sheet" id="sheet">
-  <div class="grip"></div>
-  <div id="sheetBody"></div>
-  <div class="nav2">
-    <button onclick="navSheet(-1)">← 前の場所</button>
-    <button onclick="navSheet(1)">次の場所 →</button>
+<!-- 写真ビューア：タップで 拡大→全体→閉じる -->
+<div class="viewer" id="viewer">
+  <img class="vimg zoom" id="vImg" src="" onclick="cycleViewer()">
+  <div class="vtop">
+    <span class="vname" id="vName"></span>
+    <span class="vstate" id="vState"></span>
+    <button class="vclose" onclick="event.stopPropagation();closeViewer()">✕</button>
   </div>
-  <button class="closebtn" onclick="closeSheet()">閉じる</button>
+  <button class="vnav prev" onclick="event.stopPropagation();navViewer(-1)">‹</button>
+  <button class="vnav next" onclick="event.stopPropagation();navViewer(1)">›</button>
+  <div class="vhint" id="vHint"></div>
 </div>
-
-<div class="bigview" id="bigview" onclick="this.classList.remove('show')"><img id="bigImg" src=""></div>
 
 <script>
 /* ===== 場所データ =====
@@ -448,6 +451,7 @@ const SPOTS = [
 const mapInner = document.getElementById('mapInner');
 const cards = document.getElementById('cards');
 let curIdx = null;
+let vState = 'zoom';   // 'zoom'(拡大) → 'fit'(全体) → 閉じる
 
 function isHit(s, q){ return q && (s.name.includes(q) || (s.items||[]).some(i=>i.includes(q))); }
 function photoMode(){ return document.body.classList.contains('photo'); }
@@ -464,12 +468,11 @@ function render(){
     if(!miss) shown++;
 
     const pin = document.createElement('div');
-    pin.className = 'pin' + (s.floor==='2階'?' f2':'') + (hit?' hit':'') + (miss?' dim':'')
-                    + (idx===curIdx?' active':'');
+    pin.className = 'pin' + (s.floor==='2階'?' f2':'') + (hit?' hit':'') + (miss?' dim':'');
     pin.style.left = (pm ? s.ax : s.x)+'%';
     pin.style.top  = (pm ? s.ay : s.y)+'%';
     pin.innerHTML = `<div class="dot">${s.no}</div><div class="lbl">${s.name}</div>`;
-    pin.onclick = (e)=>{ e.stopPropagation(); openSheet(idx); };
+    pin.onclick = (e)=>{ e.stopPropagation(); openViewer(idx); };
     mapInner.appendChild(pin);
 
     const card = document.createElement('div');
@@ -478,48 +481,44 @@ function render(){
       `<div class="num">${s.no}</div>
        <img class="thumb" src="写真/thumb/${s.file}" loading="lazy">
        <div><div class="nm">${s.name}</div><div class="fl">${s.floor}</div></div>`;
-    card.onclick = ()=>openSheet(idx);
+    card.onclick = ()=>openViewer(idx);
     cards.appendChild(card);
   });
   document.getElementById('cnt').textContent = q ? shown+'/'+SPOTS.length : SPOTS.length;
 }
 
-function openSheet(idx){
+/* ===== 写真ビューア（拡大→全体→閉じる） ===== */
+function openViewer(idx){
   curIdx = idx;
-  const s = SPOTS[idx];
-  const q = document.getElementById('q').value.trim();
-  const f2 = s.floor==='2階';
-  const body = document.getElementById('sheetBody');
-  const itemsHtml = (s.items&&s.items.length)
-    ? `<h4>置いてある材料・機械</h4><div class="tags">${s.items.map(i=>`<span class="tag${q&&i.includes(q)?' hit':''}">${i}</span>`).join('')}</div>`
-    : '';
-  body.innerHTML = `
-    <h3 class="${f2?'f2':''}"><span class="num">${s.no}</span>${s.name}</h3>
-    <span class="fbadge ${f2?'f2':''}">${s.floor}</span>
-    <img class="photo" src="写真/${s.file}" alt="${s.name}" onclick="enlarge('${s.file}')">
-    ${itemsHtml}
-  `;
-  render();
-  // 押したピンが右半分なら写真を左に、左半分なら右に出す（押した場所をよける／PC表示のみ有効）
-  const xpct = photoMode() ? s.ax : s.x;
-  document.getElementById('sheet').classList.toggle('leftside', xpct > 50);
-  document.getElementById('ov').classList.add('show');
-  document.getElementById('sheet').classList.add('show');
+  vState = 'zoom';
+  applyViewer();
+  document.getElementById('viewer').classList.add('show');
 }
-function navSheet(d){
+function applyViewer(){
+  const s = SPOTS[curIdx];
+  const img = document.getElementById('vImg');
+  img.src = '写真/'+s.file;
+  img.className = 'vimg ' + vState;
+  document.getElementById('vName').textContent = s.no+'. '+s.name+'（'+s.floor+'）';
+  document.getElementById('vState').textContent = vState==='zoom' ? '拡大' : '全体';
+  document.getElementById('vHint').textContent =
+    vState==='zoom' ? 'タップで全体表示 →' : 'もう一度タップで閉じる';
+}
+function cycleViewer(){
+  if(vState==='zoom'){ vState='fit'; applyViewer(); }
+  else { closeViewer(); }
+}
+function navViewer(d){
   if(curIdx===null) return;
-  openSheet((curIdx + d + SPOTS.length) % SPOTS.length);
+  curIdx = (curIdx + d + SPOTS.length) % SPOTS.length;
+  vState = 'zoom';
+  applyViewer();
 }
-function closeSheet(){
+function closeViewer(){
   curIdx = null;
-  document.getElementById('ov').classList.remove('show');
-  document.getElementById('sheet').classList.remove('show');
-  render();
+  document.getElementById('viewer').classList.remove('show');
 }
-function enlarge(file){
-  document.getElementById('bigImg').src = '写真/'+file;
-  document.getElementById('bigview').classList.add('show');
-}
+
 function toggleLbl(){
   document.body.classList.toggle('showlbl');
   document.getElementById('lblBtn').classList.toggle('on', document.body.classList.contains('showlbl'));
@@ -527,11 +526,17 @@ function toggleLbl(){
 function toggleBg(){
   document.body.classList.toggle('photo');
   document.getElementById('bgBtn').textContent =
-    photoMode() ? '🗺️ 平面図に切替' : '📷 航空写真に切替';
+    photoMode() ? '🗺️ 平面図' : '📷 航空写真';
   render();
 }
 
 document.getElementById('q').addEventListener('input', render);
+document.addEventListener('keydown', e=>{
+  if(!document.getElementById('viewer').classList.contains('show')) return;
+  if(e.key==='Escape') closeViewer();
+  if(e.key==='ArrowLeft') navViewer(-1);
+  if(e.key==='ArrowRight') navViewer(1);
+});
 render();
 </script>
 </body>
