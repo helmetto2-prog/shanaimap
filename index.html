@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>みどり造園 社内マップ（資材置き場）</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { font-family:"Yu Gothic UI","Hiragino Sans",Meiryo,sans-serif; background:#f0f4ef; color:#243324; }
+
+  header { background:#2e5d34; color:#fff; padding:10px 14px; position:sticky; top:0; z-index:50; }
+  header h1 { font-size:17px; }
+  header p { font-size:11px; opacity:.85; margin-top:2px; }
+
+  .toolbar { display:flex; gap:8px; padding:10px 12px; align-items:center; flex-wrap:wrap; }
+  .toolbar input[type="text"] {
+    flex:1; min-width:150px; padding:9px 12px; border:2px solid #9dbb9d; border-radius:20px;
+    font-size:15px; outline:none; background:#fff;
+  }
+  .toolbar input[type="text"]:focus { border-color:#2e5d34; }
+  .modebtn {
+    font-size:12px; padding:8px 12px; border-radius:20px; border:2px solid #9dbb9d;
+    background:#fff; color:#2e5d34; cursor:pointer; user-select:none;
+  }
+  .modebtn.on { background:#c8a24a; border-color:#c8a24a; color:#fff; }
+
+  .legend { display:flex; gap:14px; padding:0 14px 8px; font-size:11px; color:#5a6e5a; align-items:center; flex-wrap:wrap; }
+  .legend span { display:inline-flex; align-items:center; gap:4px; }
+  .legend i { width:13px; height:13px; border-radius:50%; display:inline-block; border:2px solid #fff;
+    box-shadow:0 0 2px rgba(0,0,0,.4); }
+  .legend i.r{ background:#d84a3a;} .legend i.b{ background:#1e78c8;} .legend i.g{ background:#c8a24a;}
+
+  /* ===== 地図 ===== */
+  .map-wrap { margin:0 12px 10px; position:relative; border-radius:12px; overflow:hidden;
+    box-shadow:0 2px 8px rgba(0,0,0,.15); background:#e8e4da; }
+  .map-inner { position:relative; width:100%; }
+  .map-inner svg { width:100%; display:block; }
+  .map-inner img.aerial { width:100%; display:none; }
+  body.photo .map-inner svg { display:none; }
+  body.photo .map-inner img.aerial { display:block; }
+
+  .pin { position:absolute; transform:translate(-50%,-50%); cursor:pointer; z-index:5;
+    display:flex; flex-direction:column; align-items:center; }
+  .pin .dot {
+    width:23px; height:23px; border-radius:50%;
+    background:#d84a3a; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.55);
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:11px; font-weight:bold;
+  }
+  .pin.f2 .dot { background:#1e78c8; }
+  .pin .lbl {
+    margin-top:2px; background:rgba(255,255,255,.92); color:#243324; font-size:9px; font-weight:bold;
+    padding:1px 5px; border-radius:7px; white-space:nowrap; box-shadow:0 1px 2px rgba(0,0,0,.4);
+    max-width:110px; overflow:hidden; text-overflow:ellipsis;
+  }
+  body:not(.showlbl) .pin .lbl { display:none; }
+  .pin.hit .dot { background:#c8a24a; transform:scale(1.15); }
+  .pin.dim { opacity:.25; }
+  .pin.active .dot { outline:3px solid #ffd97a; }
+
+  .hint { margin:0 14px 10px; font-size:11px; color:#5a6e5a; }
+
+  /* ===== 場所一覧 ===== */
+  .list { padding:0 12px 90px; }
+  .list h2 { font-size:13px; color:#2e5d34; margin:8px 2px 6px; }
+  .cards { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  @media (max-width:520px){ .cards { grid-template-columns:1fr; } }
+  .card {
+    background:#fff; border-radius:10px; padding:8px 10px; cursor:pointer;
+    box-shadow:0 1px 4px rgba(0,0,0,.08); display:flex; align-items:center; gap:9px;
+  }
+  .card .num {
+    flex:none; width:26px; height:26px; border-radius:50%; background:#d84a3a; color:#fff;
+    font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center;
+  }
+  .card.f2 .num { background:#1e78c8; }
+  .card.hit .num { background:#c8a24a; }
+  .card .nm { font-size:14px; font-weight:bold; }
+  .card .fl { font-size:10px; color:#7a8f7a; margin-top:1px; }
+  .card.hidden { display:none; }
+  .card .thumb { flex:none; width:42px; height:42px; border-radius:6px; object-fit:cover; }
+
+  /* ===== 詳細シート ===== */
+  .overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:90; display:none; }
+  .overlay.show { display:block; }
+  .sheet {
+    position:fixed; left:0; right:0; bottom:0; max-height:85vh; overflow-y:auto; z-index:100;
+    background:#fff; border-radius:16px 16px 0 0; padding:16px 16px 30px;
+    transform:translateY(105%); transition:transform .25s ease;
+    box-shadow:0 -4px 20px rgba(0,0,0,.3);
+  }
+  .sheet.show { transform:translateY(0); }
+  .sheet .grip { width:44px; height:5px; border-radius:3px; background:#ccc; margin:0 auto 12px; }
+  .sheet h3 { font-size:19px; color:#2e5d34; display:flex; align-items:center; gap:8px; }
+  .sheet h3 .num { width:28px; height:28px; border-radius:50%; background:#d84a3a; color:#fff;
+    font-size:14px; display:inline-flex; align-items:center; justify-content:center; flex:none; }
+  .sheet h3.f2 .num { background:#1e78c8; }
+  .fbadge { display:inline-block; font-size:11px; font-weight:bold; padding:3px 12px; border-radius:12px;
+    margin:8px 0 10px; background:#d84a3a; color:#fff; }
+  .fbadge.f2 { background:#1e78c8; }
+  .sheet .photo { width:100%; border-radius:10px; display:block; cursor:zoom-in; background:#eee; }
+  .sheet h4 { font-size:13px; color:#2e5d34; margin:12px 0 5px; border-left:4px solid #c8a24a; padding-left:7px; }
+  .tags { display:flex; flex-wrap:wrap; gap:6px; }
+  .tag { background:#e6efe6; color:#2e5d34; font-size:13px; padding:5px 11px; border-radius:14px; }
+  .tag.hit { background:#c8a24a; color:#fff; font-weight:bold; }
+  .nav2 { display:flex; gap:8px; margin-top:14px; }
+  .nav2 button { flex:1; padding:10px 0; border-radius:20px; border:none; font-size:14px; cursor:pointer;
+    background:#e6efe6; color:#2e5d34; font-weight:bold; }
+  .closebtn { display:block; margin:10px auto 0; padding:9px 40px; border-radius:20px; border:none;
+    background:#2e5d34; color:#fff; font-size:14px; cursor:pointer; }
+
+  .bigview { position:fixed; inset:0; background:rgba(0,0,0,.9); z-index:300; display:none;
+    align-items:center; justify-content:center; }
+  .bigview.show { display:flex; }
+  .bigview img { max-width:96vw; max-height:92vh; border-radius:8px; }
+
+  @media (min-width:800px) {
+    .sheet { left:auto; right:20px; bottom:20px; width:440px; border-radius:16px; max-height:80vh; }
+    /* 右側のピンを押したら写真は左に出す（押した場所＝ボタンをよける） */
+    .sheet.leftside { left:20px; right:auto; }
+    header h1 { font-size:19px; }
+  }
+
+  /* ===== A4印刷（縦）：1枚目=平面図、2枚目以降=場所一覧 ===== */
+  @media print {
+    @page { size: A4 portrait; margin: 10mm; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { background:#fff; }
+    .toolbar, .hint, .overlay, .sheet, .modebtn, .bigview, .legend { display:none !important; }
+    header { position:static; border-radius:0; }
+    body .pin .lbl { display:block !important; }
+    .map-wrap { margin:8px 0; box-shadow:none; border:1px solid #999; border-radius:0;
+      page-break-inside:avoid; page-break-after:always; }
+    .pin.dim { opacity:1; }
+    .pin.hit .dot { background:#d84a3a; transform:none; }
+    .list { padding:0; }
+    .card { box-shadow:none; border:1px solid #bbb; page-break-inside:avoid; }
+    .card.hidden { display:flex !important; }
+    .card .thumb { display:none; }
+  }
+</style>
+</head>
+<body class="showlbl">
+
+<header>
+  <h1>🌲 みどり造園 社内マップ（資材置き場）</h1>
+  <p>番号ピンを押すと写真と場所の名前が出ます／名前は仮です。良い呼び名があれば水野まで！</p>
+</header>
+
+<div class="toolbar">
+  <input type="text" id="q" placeholder="🔍 場所の名前で検索（例：更衣室・木材）">
+  <div class="modebtn" id="bgBtn" onclick="toggleBg()">📷 航空写真に切替</div>
+  <div class="modebtn on" id="lblBtn" onclick="toggleLbl()">🏷️ 名前ラベル</div>
+  <div class="modebtn" onclick="window.print()">🖨️ A4印刷</div>
+</div>
+
+<div class="legend">
+  <span><i class="r"></i>1階・屋外</span>
+  <span><i class="b"></i>2階</span>
+  <span><i class="g"></i>検索ヒット</span>
+</div>
+
+<div class="map-wrap">
+  <div class="map-inner" id="mapInner">
+    <!-- ======== すっきり長方形の配置図 ======== -->
+    <svg viewBox="0 0 950 720" xmlns="http://www.w3.org/2000/svg" font-family="'Yu Gothic UI','Hiragino Sans',Meiryo,sans-serif">
+      <!-- 下地 -->
+      <rect x="0" y="0" width="950" height="720" fill="#e6e2d6"/>
+
+      <!-- 線路（西端） -->
+      <rect x="0" y="0" width="18" height="720" fill="#b9b2a4"/>
+      <line x1="6" y1="0" x2="6" y2="720" stroke="#7d766a" stroke-width="2"/>
+      <line x1="13" y1="0" x2="13" y2="720" stroke="#7d766a" stroke-width="2"/>
+
+      <!-- 西の道路 -->
+      <rect x="18" y="0" width="44" height="720" fill="#a9aeae"/>
+      <line x1="40" y1="0" x2="40" y2="720" stroke="#fff" stroke-width="2" stroke-dasharray="14 12"/>
+      <text x="30" y="690" font-size="13" fill="#fff" writing-mode="tb" letter-spacing="4">道　路</text>
+
+      <!-- ▼▼ 敷地（長方形） ▼▼ -->
+      <rect x="70" y="30" width="860" height="660" fill="#f0f5e3" stroke="#5f8f4e" stroke-width="3" stroke-dasharray="10 6"/>
+
+      <!-- 通り道（自宅の北側・横断） -->
+      <rect x="70" y="160" width="860" height="46" fill="#e3e8d2"/>
+      <text x="640" y="190" font-size="14" fill="#9aa88a" letter-spacing="6">通　り　道</text>
+      <!-- 広い道（第二更衣室にぶつかって南端で止まる・中型車2台並走） -->
+      <rect x="488" y="206" width="72" height="404" fill="#e0e5cd"/>
+      <line x1="524" y1="210" x2="524" y2="606" stroke="#fff" stroke-width="1.5" stroke-dasharray="12 10"/>
+      <text x="516" y="250" font-size="11" fill="#9aa88a" writing-mode="tb" letter-spacing="2">広い道（中型車２台）</text>
+      <rect x="70" y="405" width="860" height="30" fill="#e3e8d2"/>
+      <!-- 自宅へ通じる通路（工具庫と事務所の間） -->
+      <rect x="294" y="340" width="36" height="280" fill="#e3e8d2"/>
+      <text x="318" y="400" font-size="11" fill="#9aa88a" writing-mode="tb" letter-spacing="3">自宅へ</text>
+      <!-- 工具庫の南の通路 -->
+      <rect x="70" y="556" width="260" height="26" fill="#e3e8d2"/>
+      <text x="150" y="574" font-size="11" fill="#9aa88a" letter-spacing="4">通　路</text>
+      <!-- 正面入口 → フートン置き場の北側へ 真っすぐの道 -->
+      <rect x="95" y="588" width="480" height="18" fill="#e3e8d2"/>
+      <text x="250" y="601" font-size="11" fill="#9aa88a" letter-spacing="3">正面入口 →　フートンへ</text>
+
+      <!-- ◆ 左上：北入口 -->
+      <rect x="70" y="42" width="8" height="60" fill="#f0f5e3"/>
+      <text x="84" y="66" font-size="14" fill="#c0392b" font-weight="bold">⬅ 北入口</text>
+
+      <!-- 寮（車1台分ぶん右へ延長 w92→132・右辺242） -->
+      <rect x="110" y="72" width="132" height="66" fill="#dcd4c0" stroke="#6d675a" stroke-width="1.5"/>
+      <text x="162" y="110" font-size="14" fill="#4a4436">寮</text>
+
+      <!-- 北社員駐車場（通り道の北・寮と会長畑の間いっぱいに拡張＝たくさん停める） -->
+      <rect x="250" y="55" width="505" height="90" fill="#dfe6db" stroke="#9aa895" stroke-dasharray="6 4"/>
+      <g stroke="#b7c2b1" stroke-width="2">
+        <line x1="282" y1="60" x2="282" y2="140"/>
+        <line x1="318" y1="60" x2="318" y2="140"/><line x1="354" y1="60" x2="354" y2="140"/>
+        <line x1="390" y1="60" x2="390" y2="140"/><line x1="426" y1="60" x2="426" y2="140"/>
+        <line x1="462" y1="60" x2="462" y2="140"/><line x1="498" y1="60" x2="498" y2="140"/>
+        <line x1="534" y1="60" x2="534" y2="140"/><line x1="570" y1="60" x2="570" y2="140"/>
+        <line x1="606" y1="60" x2="606" y2="140"/><line x1="642" y1="60" x2="642" y2="140"/>
+        <line x1="678" y1="60" x2="678" y2="140"/><line x1="714" y1="60" x2="714" y2="140"/>
+      </g>
+      <text x="300" y="50" font-size="13" fill="#5a6e5a">北社員駐車場（拡張）</text>
+
+      <!-- ◆ 右上：会長畑 -->
+      <rect x="760" y="45" width="155" height="120" fill="#cfe5b4" stroke="#7fa456" stroke-width="1.5"/>
+      <g stroke="#9ec176" stroke-width="2.5">
+        <line x1="770" y1="68" x2="905" y2="68"/><line x1="770" y1="90" x2="905" y2="90"/>
+        <line x1="770" y1="112" x2="905" y2="112"/><line x1="770" y1="134" x2="905" y2="134"/>
+      </g>
+      <text x="800" y="160" font-size="14" fill="#5b7a3a" font-weight="bold">会長畑</text>
+
+      <!-- 方位（N矢印を左へ30度傾け＝真北は上から左に30度） -->
+      <g>
+        <circle cx="640" cy="95" r="22" fill="#fff" stroke="#666" stroke-width="1.5"/>
+        <polygon points="640,79 646,99 640,94 634,99" fill="#c0392b" transform="rotate(-30 640 95)"/>
+        <text x="635" y="111" font-size="11" fill="#333" font-weight="bold" transform="rotate(-30 640 95)">N</text>
+      </g>
+
+      <!-- 自宅（下の事務所の下辺に合わせ南へ）・自宅駐車場（自宅の左辺に合わせ右へ・南に隣接） -->
+      <rect x="200" y="382" width="85" height="55" fill="#dfe6db" stroke="#9aa895" stroke-dasharray="6 4"/>
+      <text x="203" y="376" font-size="11" fill="#5a6e5a">自宅駐車場</text>
+      <rect x="200" y="260" width="130" height="120" fill="#eceff5" stroke="#5a5f6e" stroke-width="1.5"/>
+      <line x1="200" y1="260" x2="265" y2="320" stroke="#aab" stroke-width="1.5"/>
+      <line x1="330" y1="260" x2="265" y2="320" stroke="#aab" stroke-width="1.5"/>
+      <line x1="200" y1="380" x2="265" y2="320" stroke="#aab" stroke-width="1.5"/>
+      <line x1="330" y1="380" x2="265" y2="320" stroke="#aab" stroke-width="1.5"/>
+      <text x="250" y="325" font-size="14" fill="#3a3f4e">自宅</text>
+
+      <!-- アームロール・下の事務所 -->
+      <rect x="360" y="225" width="90" height="65" fill="#c8cfd9" stroke="#7d8694"/>
+      <text x="366" y="262" font-size="11" fill="#4a5260">アームロール</text>
+      <rect x="360" y="310" width="100" height="70" fill="#f4f2e8" stroke="#847d68" stroke-width="1.5"/>
+      <text x="372" y="350" font-size="12" fill="#5a5442">下の事務所</text>
+
+      <!-- 木材置き場（横長に右へ30%延長 w73→95・右辺660） -->
+      <rect x="565" y="225" width="95" height="40" fill="#d9c8a2" stroke="#a8905e"/>
+      <line x1="589" y1="225" x2="589" y2="265" stroke="#a8905e"/>
+      <line x1="613" y1="225" x2="613" y2="265" stroke="#a8905e"/>
+      <line x1="637" y1="225" x2="637" y2="265" stroke="#a8905e"/>
+      <text x="570" y="220" font-size="11" fill="#8a7040">木材置き場</text>
+      <!-- シャッター庫（新設列と入れ替えて西側へ・縦向き車庫5・右辺を木材にそろえ638） -->
+      <rect x="565" y="270" width="73" height="200" fill="#8fb478" stroke="#4d7038" stroke-width="2"/>
+      <g stroke="#4d7038" stroke-width="1.5">
+        <line x1="565" y1="310" x2="638" y2="310"/><line x1="565" y1="350" x2="638" y2="350"/>
+        <line x1="565" y1="390" x2="638" y2="390"/><line x1="565" y1="430" x2="638" y2="430"/>
+      </g>
+      <text x="595" y="360" font-size="12" fill="#fff" font-weight="bold" writing-mode="tb" letter-spacing="1">シャッター庫</text>
+      <!-- 新設4棟（シャッター庫と入れ替えて東側へ・南→北: トイレ/板木/竹/コンプレッサー） -->
+      <rect x="648" y="429" width="48" height="56" fill="#e6ddef" stroke="#8a7fa0" stroke-width="1.5"/>
+      <text x="656" y="461" font-size="9" fill="#5c5470">トイレ</text>
+      <rect x="648" y="376" width="48" height="48" fill="#d9c8a2" stroke="#a8905e"/>
+      <text x="651" y="399" font-size="8" fill="#8a7040">板木置場</text>
+      <rect x="648" y="323" width="48" height="48" fill="#cdd9b0" stroke="#7f9455"/>
+      <text x="655" y="346" font-size="8" fill="#5b7a3a">竹置場</text>
+      <rect x="648" y="270" width="48" height="48" fill="#cfd6dc" stroke="#7d8694"/>
+      <text x="651" y="292" font-size="7" fill="#4a5260">コンプレッサー</text>
+
+      <!-- ① 北側屋根付き駐車場（縦シャッター庫と重ならないよう右へ移動 x630→700・佐野さんとの道は狭め・②ハンマーは同じ屋根の東端） -->
+      <rect x="700" y="240" width="118" height="117" fill="#dfe6db" stroke="#767d62" stroke-width="2"/>
+      <g stroke="#c2cbbe" stroke-width="2">
+        <line x1="712" y1="240" x2="748" y2="357"/><line x1="740" y1="240" x2="776" y2="357"/>
+        <line x1="768" y1="240" x2="804" y2="357"/>
+      </g>
+      <line x1="782" y1="240" x2="782" y2="357" stroke="#767d62" stroke-width="1.5"/>
+      <text x="706" y="234" font-size="12" fill="#4c5238">北側屋根付き駐車場</text>
+      <text x="786" y="290" font-size="9" fill="#4c5238">ハンマー</text>
+      <text x="786" y="303" font-size="9" fill="#4c5238">置き場</text>
+
+      <!-- ③④ 佐野さん作業場（右端をタンク/屋根駐車場の右辺915にそろえて右へ x820→870） -->
+      <rect x="870" y="240" width="45" height="90" fill="#ded4b8" stroke="#a09468" stroke-width="1.5"/>
+      <text x="874" y="282" font-size="10" fill="#6e6444">佐野さん</text>
+      <text x="874" y="297" font-size="10" fill="#6e6444">作業場</text>
+
+      <!-- 西社員駐車場（西端・一番南の1台分を潰して看板を設置＝h380→345） -->
+      <rect x="95" y="210" width="80" height="345" fill="#dfe6db" stroke="#9aa895" stroke-dasharray="6 4"/>
+      <g stroke="#b7c2b1" stroke-width="2">
+        <line x1="99" y1="245" x2="171" y2="245"/><line x1="99" y1="280" x2="171" y2="280"/>
+        <line x1="99" y1="315" x2="171" y2="315"/><line x1="99" y1="350" x2="171" y2="350"/>
+        <line x1="99" y1="385" x2="171" y2="385"/><line x1="99" y1="420" x2="171" y2="420"/>
+        <line x1="99" y1="455" x2="171" y2="455"/><line x1="99" y1="490" x2="171" y2="490"/>
+        <line x1="99" y1="525" x2="171" y2="525"/>
+      </g>
+      <text x="98" y="204" font-size="11" fill="#5a6e5a">西社員駐車場</text>
+      <!-- 看板（西側駐車場の一番南の1台を潰した所へ移設） -->
+      <rect x="108" y="562" width="54" height="26" fill="#2e8b57"/>
+      <text x="114" y="580" font-size="12" fill="#fff" font-weight="bold">看板</text>
+
+      <!-- 農薬庫（北）／工具庫（南）：そのまま南へ駐車場1台分(40)移動 y440→480 -->
+      <rect x="195" y="480" width="95" height="110" fill="#d8dcc8" stroke="#767d62" stroke-width="1.5"/>
+      <line x1="195" y1="535" x2="290" y2="535" stroke="#767d62" stroke-width="1.5"/>
+      <text x="216" y="512" font-size="12" fill="#4c5238">農薬庫</text>
+      <text x="216" y="568" font-size="12" fill="#4c5238">工具庫</text>
+
+      <!-- ★ 事務所（木造2階・入口は東側の階段） -->
+      <rect x="330" y="440" width="130" height="120" fill="#cdeade" stroke="#2c3e36" stroke-width="2.5"/>
+      <line x1="330" y1="500" x2="460" y2="500" stroke="#2c3e36" stroke-width="1" stroke-dasharray="4 3"/>
+      <text x="344" y="470" font-size="13" fill="#1e4034" font-weight="bold">事務所（2階）</text>
+      <text x="344" y="490" font-size="9" fill="#557a6a">木造2階建て</text>
+      <text x="344" y="530" font-size="13" fill="#1e4034">詰所（1階）</text>
+      <!-- 東側の階段 -->
+      <rect x="460" y="470" width="24" height="64" fill="#e8e2d0" stroke="#2c3e36" stroke-width="1.5"/>
+      <line x1="460" y1="482" x2="484" y2="482" stroke="#2c3e36"/>
+      <line x1="460" y1="494" x2="484" y2="494" stroke="#2c3e36"/>
+      <line x1="460" y1="506" x2="484" y2="506" stroke="#2c3e36"/>
+      <line x1="460" y1="518" x2="484" y2="518" stroke="#2c3e36"/>
+      <text x="490" y="496" font-size="12" fill="#c0392b" font-weight="bold">⬅入口</text>
+      <text x="490" y="512" font-size="10" fill="#c0392b">階段(東)</text>
+      <!-- ボード -->
+      <!-- メインボード：詰所の右側端へ -->
+      <rect x="450" y="512" width="8" height="30" fill="#7a5230"/>
+      <!-- 後ろのボード：90度右へ回して（縦向き）後ろ＝西端へ -->
+      <rect x="332" y="512" width="8" height="30" fill="#7a5230"/>
+
+      <!-- 第二更衣室（広い道の南端・道がぶつかる／フートン置き場の西隣） -->
+      <rect x="470" y="610" width="95" height="70" fill="#e4ded0" stroke="#8a8270" stroke-width="1.5"/>
+      <text x="480" y="650" font-size="11" fill="#5c5544">第二更衣室</text>
+
+      <!-- 更衣室2つ（右辺を左に2/3幅・下辺を左の事務所の底辺560に合わせ南へ） -->
+      <rect x="565" y="490" width="87" height="70" fill="#e4ded0" stroke="#8a8270" stroke-width="1.5"/>
+      <line x1="608" y1="490" x2="608" y2="560" stroke="#8a8270"/>
+      <text x="570" y="528" font-size="10" fill="#5c5544">更衣室</text>
+      <text x="612" y="522" font-size="10" fill="#5c5544">男子</text>
+      <text x="612" y="536" font-size="10" fill="#5c5544">更衣室</text>
+
+      <!-- フートン・くまで（第二更衣室の上辺に合わせて東隣） -->
+      <rect x="575" y="610" width="110" height="36" fill="#d9c8a2" stroke="#a8905e"/>
+      <text x="585" y="633" font-size="11" fill="#8a7040">フートン</text>
+      <rect x="575" y="650" width="110" height="34" fill="#d9c8a2" stroke="#a8905e"/>
+      <text x="585" y="672" font-size="11" fill="#8a7040">くまで</text>
+
+      <!-- 脚立（くまでの南側684に合わせて下へ） -->
+      <rect x="695" y="629" width="60" height="55" fill="#ccd4dc" stroke="#7d8694"/>
+      <text x="706" y="661" font-size="11" fill="#4a5260">脚立</text>
+
+      <!-- タンク（横長・屋根駐車場の北辺と同じ長さ80・左右そろえ） -->
+      <rect x="835" y="372" width="80" height="30" rx="6" fill="#dde2e8" stroke="#7d8694" stroke-width="2"/>
+      <text x="852" y="392" font-size="11" fill="#4a5260">タンク</text>
+      <!-- タンク横屋根駐車場（南側を階段にした分だけ縮小・縦長・東の一面） -->
+      <rect x="835" y="410" width="80" height="140" fill="#a8d3b4" stroke="#2f7d4e" stroke-width="3"/>
+      <g fill="#2f7d4e">
+        <circle cx="850" cy="430" r="3"/><circle cx="900" cy="430" r="3"/>
+        <circle cx="850" cy="500" r="3"/><circle cx="900" cy="500" r="3"/>
+      </g>
+      <!-- 南側の階段 -->
+      <rect x="835" y="550" width="80" height="40" fill="#e8e2d0" stroke="#2f7d4e" stroke-width="1.5"/>
+      <line x1="835" y1="560" x2="915" y2="560" stroke="#2f7d4e"/>
+      <line x1="835" y1="570" x2="915" y2="570" stroke="#2f7d4e"/>
+      <line x1="835" y1="580" x2="915" y2="580" stroke="#2f7d4e"/>
+      <text x="843" y="576" font-size="9" fill="#2f7d4e">階段</text>
+      <text x="868" y="435" font-size="11" fill="#1e4d32" font-weight="bold" writing-mode="tb" letter-spacing="2">屋根駐車場（２階クレーン）</text>
+
+      <!-- ◆ 右下：パッカー置き場 -->
+      <rect x="760" y="600" width="155" height="80" fill="#dfe6db" stroke="#9aa895" stroke-dasharray="6 4"/>
+      <text x="778" y="644" font-size="12" fill="#5a6e5a">パッカー置き場</text>
+
+      <!-- ◆ 左：正面入口（開口の上部を事務所の南辺560にそろえる／看板は西側駐車場へ移設済み） -->
+      <rect x="70" y="560" width="8" height="60" fill="#f0f5e3"/>
+      <text x="84" y="588" font-size="14" fill="#c0392b" font-weight="bold">⬅ 正面入口</text>
+
+      <!-- 注記 -->
+      <text x="330" y="710" font-size="11" fill="#8a8f85">※おおよその配置イメージ図です（縮尺・建物の形は目安）</text>
+    </svg>
+    <!-- 航空写真（切替用） -->
+    <img class="aerial" src="上空写真.jpg" alt="上空写真">
+  </div>
+</div>
+
+<div class="hint">※ピンの名前は「（仮）」です。写真をタップすると大きく見られます。「📷航空写真に切替」で実際の空撮とも見比べられます。</div>
+
+<div class="list">
+  <h2>📋 場所一覧（<span id="cnt">35</span>か所）</h2>
+  <div class="cards" id="cards"></div>
+</div>
+
+<div class="overlay" id="ov" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="grip"></div>
+  <div id="sheetBody"></div>
+  <div class="nav2">
+    <button onclick="navSheet(-1)">← 前の場所</button>
+    <button onclick="navSheet(1)">次の場所 →</button>
+  </div>
+  <button class="closebtn" onclick="closeSheet()">閉じる</button>
+</div>
+
+<div class="bigview" id="bigview" onclick="this.classList.remove('show')"><img id="bigImg" src=""></div>
+
+<script>
+/* ===== 場所データ =====
+   x,y   … 平面図（長方形レイアウト）でのピン位置％
+   ax,ay … 航空写真でのピン位置％（切替時に使用） */
+const SPOTS = [
+{no:1,file:"KIMG20260706_090414606.JPG",x:79.9,y:41.5,ax:66.4,ay:72.1,floor:"1階",name:"北側屋根付き駐車場",items:[]},
+{no:2,file:"KIMG20260706_090427029.JPG",x:84.2,y:41.5,ax:74.5,ay:72.9,floor:"1階",name:"ハンマー置き場",items:[]},
+{no:3,file:"KIMG20260706_090433283.JPG",x:93.9,y:37.8,ax:81.3,ay:74.2,floor:"1階",name:"佐野さん作業場",items:[]},
+{no:4,file:"KIMG20260706_090442900.JPG",x:94.7,y:41.7,ax:82.9,ay:74.3,floor:"1階",name:"佐野さん作業場中",items:[]},
+{no:5,file:"KIMG20260706_090453982.JPG",x:91.6,y:13.9,ax:90.3,ay:66.2,floor:"1階",name:"会長畑",items:[]},
+{no:6,file:"KIMG20260706_090504773.JPG",x:83.7,y:15.3,ax:86.1,ay:65.5,floor:"1階",name:"会長畑２",items:[]},
+{no:7,file:"KIMG20260706_090523053.JPG",x:92.1,y:66.7,ax:75.2,ay:82.9,floor:"1階",name:"タンク横屋根駐車場",items:[]},
+{no:8,file:"KIMG20260706_090544244.JPG",x:92.1,y:72.9,ax:78.6,ay:84.5,floor:"2階",name:"固定クレーン置き場",items:[]},
+{no:9,file:"KIMG20260706_090603282.JPG",x:76.3,y:91.2,ax:58.6,ay:90.7,floor:"1階",name:"脚立置き場",items:[]},
+{no:10,file:"KIMG20260706_090611567.JPG",x:88.2,y:88.9,ax:68.8,ay:93.9,floor:"1階",name:"パッカー置き場",items:[]},
+{no:11,file:"KIMG20260706_090627529.JPG",x:61.7,y:72.9,ax:59.6,ay:80.1,floor:"1階",name:"更衣室",items:[]},
+{no:12,file:"KIMG20260706_090640241.JPG",x:66.3,y:72.9,ax:58.4,ay:78,floor:"1階",name:"男子更衣室",items:[]},
+{no:13,file:"KIMG20260706_090644711.JPG",x:66.3,y:87.2,ax:53.7,ay:85.8,floor:"1階",name:"フートン置き場",items:[]},
+{no:14,file:"KIMG20260706_090657124.JPG",x:66.3,y:92.6,ax:51.4,ay:88.2,floor:"1階",name:"くまで置き場",items:[]},
+{no:15,file:"KIMG20260706_090706023.JPG",x:54.5,y:89.6,ax:45.4,ay:81.6,floor:"1階",name:"第二更衣室",items:[]},
+{no:16,file:"KIMG20260706_090714301.JPG",x:52.6,y:91.7,ax:43.4,ay:82.6,floor:"1階",name:"第二更衣室中",items:[]},
+{no:17,file:"KIMG20260706_090726994.JPG",x:43.7,y:72.2,ax:42.2,ay:72.1,floor:"1階",name:"２Ｆ事務所　１Ｆ詰所",items:[]},
+{no:18,file:"KIMG20260706_090737584.JPG",x:38.9,y:69.4,ax:40.9,ay:70.7,floor:"1階",name:"詰所",items:[]},
+{no:19,file:"KIMG20260706_090748356.JPG",x:25.6,y:70.4,ax:34.7,ay:71.9,floor:"1階",name:"農薬庫（北側）",items:[]},
+{no:20,file:"KIMG20260706_090756607.JPG",x:25.6,y:78.1,ax:29.7,ay:71.8,floor:"1階",name:"工具庫（南側）",items:[]},
+{no:21,file:"KIMG20260706_090816413.JPG",x:10,y:88.2,ax:10,ay:60.7,floor:"1階",name:"看板入口",items:[]},
+{no:22,file:"KIMG20260706_090820376.JPG",x:14.2,y:53.1,ax:16.5,ay:52.9,floor:"1階",name:"西社員駐車場",items:[]},
+{no:23,file:"KIMG20260706_090837053.JPG",x:18.5,y:13.9,ax:29,ay:35.4,floor:"1階",name:"寮",items:[]},
+{no:24,file:"KIMG20260706_090841093.JPG",x:10.5,y:8.3,ax:20.9,ay:36.7,floor:"1階",name:"北入口",items:[]},
+{no:25,file:"KIMG20260706_090850511.JPG",x:52.9,y:13.9,ax:48.8,ay:38.5,floor:"1階",name:"北社員駐車場",items:[]},
+{no:26,file:"KIMG20260706_090911702.JPG",x:25.5,y:56.9,ax:26.4,ay:56.2,floor:"1階",name:"自宅駐車場",items:[]},
+{no:27,file:"KIMG20260706_090925556.JPG",x:27.9,y:44.4,ax:33.9,ay:58.9,floor:"1階",name:"自宅",items:[]},
+{no:28,file:"KIMG20260706_090951594.JPG",x:42.6,y:35.8,ax:51.4,ay:54.8,floor:"1階",name:"アームロール置き場",items:[]},
+{no:29,file:"KIMG20260706_091008543.JPG",x:63.3,y:51.4,ax:58.4,ay:62.9,floor:"1階",name:"シャッター庫（右車庫　左木材置き場）",items:[]},
+{no:30,file:"KIMG20260706_091021678.JPG",x:64.5,y:34,ax:63.8,ay:58.2,floor:"1階",name:"木材置き場",items:[]},
+{no:31,file:"KIMG20260706_091045560.JPG",x:45.3,y:47.9,ax:48.9,ay:64.5,floor:"1階",name:"下の事務所",items:[]},
+{no:32,file:"KIMG20260706_091123597.JPG",x:41.6,y:47.9,ax:43.8,ay:61.9,floor:"1階",name:"下の事務所中",items:[]},
+{no:33,file:"KIMG20260706_091345865.JPG",x:92.1,y:53.8,ax:80.9,ay:79.8,floor:"1階",name:"タンク",items:[]},
+{no:34,file:"KIMG20260706_092706989.JPG",x:47.8,y:73.2,ax:38.9,ay:69.3,floor:"1階",name:"メインボード",items:[]},
+{no:35,file:"KIMG20260706_092715908.JPG",x:35.4,y:73.2,ax:43.8,ay:72.2,floor:"1階",name:"後ろのボード",items:[]},
+];
+
+const mapInner = document.getElementById('mapInner');
+const cards = document.getElementById('cards');
+let curIdx = null;
+
+function isHit(s, q){ return q && (s.name.includes(q) || (s.items||[]).some(i=>i.includes(q))); }
+function photoMode(){ return document.body.classList.contains('photo'); }
+
+function render(){
+  mapInner.querySelectorAll('.pin').forEach(p=>p.remove());
+  cards.innerHTML = '';
+  const q = document.getElementById('q').value.trim();
+  const pm = photoMode();
+  let shown = 0;
+
+  SPOTS.forEach((s,idx)=>{
+    const hit = isHit(s,q), miss = q && !hit;
+    if(!miss) shown++;
+
+    const pin = document.createElement('div');
+    pin.className = 'pin' + (s.floor==='2階'?' f2':'') + (hit?' hit':'') + (miss?' dim':'')
+                    + (idx===curIdx?' active':'');
+    pin.style.left = (pm ? s.ax : s.x)+'%';
+    pin.style.top  = (pm ? s.ay : s.y)+'%';
+    pin.innerHTML = `<div class="dot">${s.no}</div><div class="lbl">${s.name}</div>`;
+    pin.onclick = (e)=>{ e.stopPropagation(); openSheet(idx); };
+    mapInner.appendChild(pin);
+
+    const card = document.createElement('div');
+    card.className = 'card' + (s.floor==='2階'?' f2':'') + (hit?' hit':'') + (miss?' hidden':'');
+    card.innerHTML =
+      `<div class="num">${s.no}</div>
+       <img class="thumb" src="写真/_thumb/${s.file}" loading="lazy">
+       <div><div class="nm">${s.name}</div><div class="fl">${s.floor}</div></div>`;
+    card.onclick = ()=>openSheet(idx);
+    cards.appendChild(card);
+  });
+  document.getElementById('cnt').textContent = q ? shown+'/'+SPOTS.length : SPOTS.length;
+}
+
+function openSheet(idx){
+  curIdx = idx;
+  const s = SPOTS[idx];
+  const q = document.getElementById('q').value.trim();
+  const f2 = s.floor==='2階';
+  const body = document.getElementById('sheetBody');
+  const itemsHtml = (s.items&&s.items.length)
+    ? `<h4>置いてある材料・機械</h4><div class="tags">${s.items.map(i=>`<span class="tag${q&&i.includes(q)?' hit':''}">${i}</span>`).join('')}</div>`
+    : '';
+  body.innerHTML = `
+    <h3 class="${f2?'f2':''}"><span class="num">${s.no}</span>${s.name}</h3>
+    <span class="fbadge ${f2?'f2':''}">${s.floor}</span>
+    <img class="photo" src="写真/${s.file}" alt="${s.name}" onclick="enlarge('${s.file}')">
+    ${itemsHtml}
+  `;
+  render();
+  // 押したピンが右半分なら写真を左に、左半分なら右に出す（押した場所をよける／PC表示のみ有効）
+  const xpct = photoMode() ? s.ax : s.x;
+  document.getElementById('sheet').classList.toggle('leftside', xpct > 50);
+  document.getElementById('ov').classList.add('show');
+  document.getElementById('sheet').classList.add('show');
+}
+function navSheet(d){
+  if(curIdx===null) return;
+  openSheet((curIdx + d + SPOTS.length) % SPOTS.length);
+}
+function closeSheet(){
+  curIdx = null;
+  document.getElementById('ov').classList.remove('show');
+  document.getElementById('sheet').classList.remove('show');
+  render();
+}
+function enlarge(file){
+  document.getElementById('bigImg').src = '写真/'+file;
+  document.getElementById('bigview').classList.add('show');
+}
+function toggleLbl(){
+  document.body.classList.toggle('showlbl');
+  document.getElementById('lblBtn').classList.toggle('on', document.body.classList.contains('showlbl'));
+}
+function toggleBg(){
+  document.body.classList.toggle('photo');
+  document.getElementById('bgBtn').textContent =
+    photoMode() ? '🗺️ 平面図に切替' : '📷 航空写真に切替';
+  render();
+}
+
+document.getElementById('q').addEventListener('input', render);
+render();
+</script>
+</body>
+</html>
