@@ -83,7 +83,7 @@
 <div class="bar">
   <b>モード</b>
   <button class="btn on" data-mode="rect" onclick="setMode('rect')">⬛ 建物を描く</button>
-  <button class="btn" data-mode="select" onclick="setMode('select')">👆 選ぶ・動かす</button>
+  <button class="btn" data-mode="select" onclick="setMode('select')">👆 選ぶ・動かす・色変え（青）</button>
   <button class="btn" data-mode="route" onclick="setMode('route')">✏️ ルート</button>
   <button class="btn" data-mode="pin" onclick="setMode('pin')">📍 ピン調整</button>
   <select id="rectKind">
@@ -235,7 +235,7 @@ function renderThumbs(){
 function setMode(m){
   mode = m; sel = null; closeEdit(); renderAll();
   document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('on', b.dataset.mode===m));
-  const msgs = { rect:'ドラッグで四角を描く（種類はプルダウン）', select:'四角をタップ→ドラッグで移動、編集ボックスで名前変更',
+  const msgs = { rect:'ドラッグで四角を描く（種類はプルダウン）', select:'四角をタップ→移動・名前変更／ピンをダブルクリックで青（入口）⇔赤',
     route:'歩いた順に地図をタップ（↩で1点戻す）', pin:'ピンをドラッグで微調整、タップで名前変更、ダブルクリックで青（入口表示）⇔赤' };
   hint(msgs[m]);
 }
