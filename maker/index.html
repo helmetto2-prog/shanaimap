@@ -537,10 +537,10 @@ async function exportHTML(embed){
   }
 </style>
 </head>
-<body class="showlbl">
+<body class="showlbl${aerial?' photo':''}">
 <div class="titlebar">🌲 ${site}</div>
 <div class="toolbar">
-  ${aerial?'<button class="modebtn" onclick="toggleBg(this)">📷 航空写真</button>':''}
+  ${aerial?'<button class="modebtn" onclick="toggleBg(this)">🗺️ 平面図</button>':''}
   <button class="modebtn" onclick="document.body.classList.toggle('showlbl')">🏷️ 名前</button>
   <button class="modebtn" onclick="window.print()">🖨️</button>
 </div>
