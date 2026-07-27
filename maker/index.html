@@ -98,8 +98,9 @@
 </div>
 <div class="bar">
   <b>保存</b>
-  <button class="btn gold" onclick="exportHTML(true)">📦 写真込みHTML（1ファイル・おすすめ）</button>
-  <button class="btn" style="background:#06C755;color:#fff;border-color:#06C755;" onclick="shareLine()">💬 LINEで送る</button>
+  <button class="btn" onclick="previewFinished()">👀 完成品を確認（新しいタブ）</button>
+  <button class="btn gold" onclick="exportHTML(true)">📦 写真込みHTML保存</button>
+  <button class="btn" style="background:#06C755;color:#fff;border-color:#06C755;" onclick="publishAndLine()">🚀 公開してLINEへ送る</button>
   <button class="btn" onclick="exportHTML(false)">📄 写真フォルダ参照版</button>
   <button class="btn" onclick="saveProject()">💾 プロジェクト保存</button>
   <button class="btn" onclick="document.getElementById('projFile').click()">📂 プロジェクトを開く</button>
@@ -458,7 +459,7 @@ function dl(blob, name){
 }
 
 /* ================= 閲覧用HTML書き出し（shanaimap形式） ================= */
-async function exportHTML(embed){
+async function buildHTML(embed){
   if(S.spots.length===0){ toast('写真の配置がまだです（🎯自動配置）'); return; }
   const IMGJS = embed
     ? 'const IMG=' + JSON.stringify(Object.fromEntries(
@@ -613,9 +614,62 @@ document.addEventListener('keydown',e=>{
 <\/script>
 </body>
 </html>`;
-  dl(new Blob([html],{type:'text/html'}), site+'.html');
+  return {html, site};
+}
+async function exportHTML(embed){
+  const r = await buildHTML(embed); if(!r) return;
+  dl(new Blob([r.html],{type:'text/html'}), r.site+'.html');
   toast(embed ? '書き出しました。このファイル1つで写真も見られます'
              : '書き出しました。同じ場所に「写真」フォルダ（元の写真入り）を置くと表示されます');
+}
+async function previewFinished(){
+  const r = await buildHTML(true); if(!r) return;
+  const u = URL.createObjectURL(new Blob([r.html],{type:'text/html'}));
+  window.open(u,'_blank');
+  toast('新しいタブで完成品を開きました。OKなら「🚀 公開してLINEへ送る」を押してください');
+}
+function blobToB64(blob){ return new Promise(res=>{ const fr=new FileReader();
+  fr.onload=()=>res(fr.result.split(',')[1]); fr.readAsDataURL(blob); }); }
+async function publishAndLine(){
+  const r = await buildHTML(true); if(!r) return;
+  let token = localStorage.getItem('pm_ghtoken');
+  if(!token){
+    token = prompt('初回のみ：GitHubトークンを貼り付けてください。\n（会社PCの gh_pat_newsauto.txt をメモ帳で開いた中身です。\nこのブラウザの中にだけ保存され、完成品ファイルには一切入りません）');
+    if(!token) return;
+    localStorage.setItem('pm_ghtoken', token.trim());
+    token = token.trim();
+  }
+  toast('公開しています…（10秒ほどお待ちください）');
+  const slug = 'g-' + Math.random().toString(36).slice(2,8);
+  const b64 = await blobToB64(new Blob([r.html],{type:'text/html'}));
+  let res;
+  try{
+    res = await fetch('https://api.github.com/repos/helmetto2-prog/shanaimap/contents/genba/'+slug+'/index.html', {
+      method:'PUT',
+      headers:{ 'Authorization':'Bearer '+token, 'Accept':'application/vnd.github+json' },
+      body: JSON.stringify({ message:'フォトマップ公開: '+r.site, content:b64 })
+    });
+  }catch(e){ toast('通信エラーで公開できませんでした。ネット接続を確認してください'); return; }
+  if(res.status===401 || res.status===403){ localStorage.removeItem('pm_ghtoken');
+    toast('トークンが使えませんでした。もう一度🚀を押して入れ直してください'); return; }
+  if(!res.ok){ toast('公開に失敗しました（'+res.status+'）。Claudeに相談してください'); return; }
+  const url = 'https://helmetto2-prog.github.io/shanaimap/genba/'+slug+'/';
+  try{ await navigator.clipboard.writeText(url); }catch(e){}
+  const msg = '🗺️ '+r.site+'\\n\\n📍 '+url+' \\n\\nスマホで開いて、ピンか写真一覧をタップすると現場写真が見られます。';
+  let d=null;
+  try{
+    d = await fetch('https://api.github.com/repos/helmetto2-prog/fx-race-line/actions/workflows/notify.yml/dispatches', {
+      method:'POST',
+      headers:{ 'Authorization':'Bearer '+token, 'Accept':'application/vnd.github+json' },
+      body: JSON.stringify({ ref:'main', inputs:{ message: msg } })
+    });
+  }catch(e){}
+  if(d && d.status===204){
+    toast('✅ 公開してあなたのLINEに送りました！ページが開けるまで1〜2分。URLもコピー済みです');
+  } else {
+    window.open('https://line.me/R/share?text='+encodeURIComponent(r.site+'\n'+url),'_blank');
+    toast('公開はOK。LINE自動送信の権限が無いため共有画面を開きました（URLはコピー済み）');
+  }
 }
 
 /* ===== LINEで送る（題名＋公開URLの共有画面を開く） ===== */
