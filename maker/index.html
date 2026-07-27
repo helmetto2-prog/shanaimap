@@ -99,6 +99,7 @@
 <div class="bar">
   <b>保存</b>
   <button class="btn gold" onclick="exportHTML(true)">📦 写真込みHTML（1ファイル・おすすめ）</button>
+  <button class="btn" style="background:#06C755;color:#fff;border-color:#06C755;" onclick="shareLine()">💬 LINEで送る</button>
   <button class="btn" onclick="exportHTML(false)">📄 写真フォルダ参照版</button>
   <button class="btn" onclick="saveProject()">💾 プロジェクト保存</button>
   <button class="btn" onclick="document.getElementById('projFile').click()">📂 プロジェクトを開く</button>
@@ -606,6 +607,18 @@ document.addEventListener('keydown',e=>{
   dl(new Blob([html],{type:'text/html'}), site+'.html');
   toast(embed ? '書き出しました。このファイル1つで写真も見られます'
              : '書き出しました。同じ場所に「写真」フォルダ（元の写真入り）を置くと表示されます');
+}
+
+/* ===== LINEで送る（題名＋公開URLの共有画面を開く） ===== */
+function shareLine(){
+  const site = document.getElementById('siteName').value || '現場フォトマップ';
+  const url = prompt(
+    '公開URLを貼り付けてください。\n（URLは、書き出したHTMLをClaudeのチャットに送ると発行してもらえます。一度入れると記憶されます）',
+    localStorage.getItem('pm_lineurl_'+site) || localStorage.getItem('pm_lineurl') || ''
+  );
+  if(!url) return;
+  try{ localStorage.setItem('pm_lineurl_'+site, url); localStorage.setItem('pm_lineurl', url); }catch(e){}
+  window.open('https://line.me/R/share?text=' + encodeURIComponent(site + '\n' + url), '_blank');
 }
 
 setMode('rect');
