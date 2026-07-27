@@ -32,6 +32,7 @@
     box-shadow:0 1px 4px rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center;
     color:#fff; font-size:11px; font-weight:bold; }
   .pin.sel .dot { background:#c8a24a; transform:scale(1.2); }
+  .pin.blue .dot { background:#1e78c8; }
   .pin .lbl { margin-top:2px; background:rgba(255,255,255,.92); font-size:9px; font-weight:bold;
     padding:1px 5px; border-radius:7px; white-space:nowrap; box-shadow:0 1px 2px rgba(0,0,0,.4); max-width:110px;
     overflow:hidden; text-overflow:ellipsis; }
@@ -235,7 +236,7 @@ function setMode(m){
   mode = m; sel = null; closeEdit(); renderAll();
   document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('on', b.dataset.mode===m));
   const msgs = { rect:'ドラッグで四角を描く（種類はプルダウン）', select:'四角をタップ→ドラッグで移動、編集ボックスで名前変更',
-    route:'歩いた順に地図をタップ（↩で1点戻す）', pin:'ピンをドラッグで微調整、タップで名前変更' };
+    route:'歩いた順に地図をタップ（↩で1点戻す）', pin:'ピンをドラッグで微調整、タップで名前変更、ダブルクリックで青（入口表示）⇔赤' };
   hint(msgs[m]);
 }
 
@@ -347,7 +348,10 @@ function renderPins(){
   const layer = document.getElementById('pinLayer'); layer.innerHTML='';
   S.spots.forEach((s,i)=>{
     const pin = document.createElement('div');
-    pin.className = 'pin' + (sel&&sel.type==='spot'&&sel.idx===i?' sel':'');
+    pin.className = 'pin' + (s.blue?' blue':'') + (sel&&sel.type==='spot'&&sel.idx===i?' sel':'');
+    pin.addEventListener('dblclick', ev=>{ ev.preventDefault(); ev.stopPropagation();
+      s.blue = !s.blue; renderPins(); autosave();
+      toast(s.blue ? (i+1)+'番を青（入口表示）にしました' : (i+1)+'番を赤に戻しました'); });
     pin.style.left = (s.x/950*100)+'%';
     pin.style.top  = (s.y/720*100)+'%';
     pin.innerHTML = `<div class="dot">${i+1}</div><div class="lbl">${s.name}</div>`;
@@ -487,7 +491,7 @@ async function buildHTML(embed){
       (r.label?`<text x="${(r.x+6).toFixed(0)}" y="${(r.y+16).toFixed(0)}" font-size="12" fill="#4a4436">${r.label}</text>`:'');
   }).join('\n      ');
   const spots = S.spots.map((s,i)=>
-    `{no:${i+1},file:${JSON.stringify(s.file)},x:${(s.x/950*100).toFixed(1)},y:${(s.y/720*100).toFixed(1)},name:${JSON.stringify(s.name)}}`).join(',\n');
+    `{no:${i+1},file:${JSON.stringify(s.file)},x:${(s.x/950*100).toFixed(1)},y:${(s.y/720*100).toFixed(1)},name:${JSON.stringify(s.name)}${s.blue?',blue:1':''}}`).join(',\n');
 
   const html = `<!DOCTYPE html>
 <html lang="ja">
@@ -515,6 +519,8 @@ async function buildHTML(embed){
     box-shadow:0 1px 4px rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; font-weight:bold; }
   .pin .lbl { margin-top:2px; background:rgba(255,255,255,.92); font-size:9px; font-weight:bold; padding:1px 5px;
     border-radius:7px; white-space:nowrap; box-shadow:0 1px 2px rgba(0,0,0,.4); max-width:110px; overflow:hidden; text-overflow:ellipsis; }
+  .pin.blue .dot { background:#1e78c8; }
+  .card.blue .num { background:#1e78c8; }
   body:not(.showlbl) .pin .lbl { display:none; }
   .list { padding:14px 12px 40px; max-width:900px; margin:0 auto; }
   .list h2 { font-size:14px; color:#2e5d34; margin:6px 2px 8px; }
@@ -591,11 +597,11 @@ ${spots}
 const mapInner=document.getElementById('mapInner'), cards=document.getElementById('cards');
 let curIdx=null, vState='zoom';
 SPOTS.forEach((s,idx)=>{
-  const pin=document.createElement('div'); pin.className='pin';
+  const pin=document.createElement('div'); pin.className='pin'+(s.blue?' blue':'');
   pin.style.left=s.x+'%'; pin.style.top=s.y+'%';
   pin.innerHTML='<div class="dot">'+s.no+'</div><div class="lbl">'+s.name+'</div>';
   pin.onclick=e=>{e.stopPropagation();openViewer(idx);}; mapInner.appendChild(pin);
-  const card=document.createElement('div'); card.className='card';
+  const card=document.createElement('div'); card.className='card'+(s.blue?' blue':'');
   card.innerHTML='<div class="num">'+s.no+'</div><img class="thumb" src="'+psrc(s.file)+'" loading="lazy"><div class="nm">'+s.name+'</div>';
   card.onclick=()=>openViewer(idx); cards.appendChild(card);
 });
