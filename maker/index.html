@@ -94,7 +94,8 @@
 </div>
 <div class="bar">
   <b>保存</b>
-  <button class="btn" onclick="exportHTML()">📄 閲覧用HTMLを書き出し</button>
+  <button class="btn gold" onclick="exportHTML(true)">📦 写真込みHTML（1ファイル・おすすめ）</button>
+  <button class="btn" onclick="exportHTML(false)">📄 写真フォルダ参照版</button>
   <button class="btn" onclick="saveProject()">💾 プロジェクト保存</button>
   <button class="btn" onclick="document.getElementById('projFile').click()">📂 プロジェクトを開く</button>
   <input type="file" id="projFile" accept=".json" hidden>
@@ -412,8 +413,13 @@ function dl(blob, name){
 }
 
 /* ================= 閲覧用HTML書き出し（shanaimap形式） ================= */
-async function exportHTML(){
+async function exportHTML(embed){
   if(S.spots.length===0){ toast('写真の配置がまだです（🎯自動配置）'); return; }
+  const IMGJS = embed
+    ? 'const IMG=' + JSON.stringify(Object.fromEntries(
+        S.spots.map(s=>{ const p=S.photos.find(p=>p.name===s.file); return [s.file, p?p.url:'']; })
+      )) + ';\nfunction psrc(f){ return IMG[f]||""; }'
+    : 'function psrc(f){ return "写真/"+f; }';
   const site = document.getElementById('siteName').value || '現場フォトマップ';
   // 航空写真：回転を焼き込んだ画像を作る
   let aerial = '';
@@ -521,6 +527,7 @@ async function exportHTML(){
   <button class="vnav next" onclick="event.stopPropagation();navViewer(1)">›</button>
 </div>
 <script>
+${IMGJS}
 const SPOTS = [
 ${spots}
 ];
@@ -532,12 +539,12 @@ SPOTS.forEach((s,idx)=>{
   pin.innerHTML='<div class="dot">'+s.no+'</div><div class="lbl">'+s.name+'</div>';
   pin.onclick=e=>{e.stopPropagation();openViewer(idx);}; mapInner.appendChild(pin);
   const card=document.createElement('div'); card.className='card';
-  card.innerHTML='<div class="num">'+s.no+'</div><img class="thumb" src="写真/'+s.file+'" loading="lazy"><div class="nm">'+s.name+'</div>';
+  card.innerHTML='<div class="num">'+s.no+'</div><img class="thumb" src="'+psrc(s.file)+'" loading="lazy"><div class="nm">'+s.name+'</div>';
   card.onclick=()=>openViewer(idx); cards.appendChild(card);
 });
 function openViewer(i){curIdx=i;vState='zoom';apply();document.getElementById('viewer').classList.add('show');}
 function apply(){const s=SPOTS[curIdx],img=document.getElementById('vImg');
-  img.src='写真/'+s.file; img.className='vimg '+vState;
+  img.src=psrc(s.file); img.className='vimg '+vState;
   document.getElementById('vName').textContent=s.no+'. '+s.name;}
 function cycleViewer(){ if(vState==='zoom'){vState='fit';apply();} else closeViewer(); }
 function navViewer(d){ curIdx=(curIdx+d+SPOTS.length)%SPOTS.length; vState='zoom'; apply(); }
@@ -551,7 +558,8 @@ document.addEventListener('keydown',e=>{
 </body>
 </html>`;
   dl(new Blob([html],{type:'text/html'}), site+'.html');
-  toast('書き出しました。同じ場所に「写真」フォルダ（元の写真入り）を置くと表示されます');
+  toast(embed ? '書き出しました。このファイル1つで写真も見られます'
+             : '書き出しました。同じ場所に「写真」フォルダ（元の写真入り）を置くと表示されます');
 }
 
 setMode('rect');
