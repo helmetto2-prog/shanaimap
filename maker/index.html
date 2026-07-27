@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>現場フォトマップ・メーカー v01</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { font-family:"Yu Gothic UI","Hiragino Sans",Meiryo,sans-serif; background:#dfe3da; color:#243324; }
+  header { background:#2e5d34; color:#fff; padding:10px 14px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  header h1 { font-size:15px; }
+  header .ver { font-size:11px; opacity:.8; }
+  .steps { font-size:11px; background:rgba(255,255,255,.15); border-radius:14px; padding:4px 12px; }
+
+  .bar { display:flex; gap:6px; align-items:center; flex-wrap:wrap; padding:8px 10px; background:#eef1e8; border-bottom:1px solid #c9d0c2; }
+  .bar b { font-size:11px; color:#5a6e5a; margin-right:2px; }
+  .btn { font-size:12px; padding:7px 12px; border-radius:16px; border:1px solid #b9c4b3; background:#fff; color:#2e5d34; cursor:pointer; user-select:none; white-space:nowrap; }
+  .btn.on { background:#2e5d34; color:#fff; border-color:#2e5d34; }
+  .btn.warn { color:#a03a2a; }
+  .btn.gold { background:#c8a24a; color:#fff; border-color:#c8a24a; }
+  .bar input[type="range"] { width:90px; }
+  .bar label { font-size:11px; color:#5a6e5a; display:flex; align-items:center; gap:4px; }
+  .bar select { font-size:12px; padding:5px; border-radius:8px; border:1px solid #b9c4b3; }
+
+  .stage-wrap { display:flex; justify-content:center; padding:8px; }
+  .stage { position:relative; width:min(98vw, 132vh); }
+  .stage svg { width:100%; display:block; background:#e6e2d6; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.2); touch-action:none; }
+
+  .pin { position:absolute; transform:translate(-50%,-50%); cursor:grab; z-index:5;
+    display:flex; flex-direction:column; align-items:center; }
+  .pin .dot { width:24px; height:24px; border-radius:50%; background:#d84a3a; border:2px solid #fff;
+    box-shadow:0 1px 4px rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:11px; font-weight:bold; }
+  .pin.sel .dot { background:#c8a24a; transform:scale(1.2); }
+  .pin .lbl { margin-top:2px; background:rgba(255,255,255,.92); font-size:9px; font-weight:bold;
+    padding:1px 5px; border-radius:7px; white-space:nowrap; box-shadow:0 1px 2px rgba(0,0,0,.4); max-width:110px;
+    overflow:hidden; text-overflow:ellipsis; }
+
+  .panel { max-width:1100px; margin:0 auto; padding:8px 12px 60px; }
+  .panel h2 { font-size:13px; color:#2e5d34; margin:10px 0 6px; }
+  .thumbs { display:flex; gap:6px; flex-wrap:wrap; }
+  .thumbs img { width:74px; height:56px; object-fit:cover; border-radius:6px; border:3px solid transparent; cursor:pointer; }
+  .thumbs .ph { position:relative; }
+  .thumbs .ph .n { position:absolute; left:2px; top:2px; background:#d84a3a; color:#fff; font-size:10px; font-weight:bold;
+    width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .thumbs .ph.placed .n { background:#2e5d34; }
+  .thumbs .ph.sel img { border-color:#c8a24a; }
+
+  .editbox { position:fixed; right:10px; bottom:10px; z-index:80; background:#fff; border-radius:12px;
+    box-shadow:0 3px 14px rgba(0,0,0,.3); padding:10px 12px; width:230px; display:none; }
+  .editbox.show { display:block; }
+  .editbox h3 { font-size:12px; color:#2e5d34; margin-bottom:6px; }
+  .editbox input[type="text"] { width:100%; font-size:13px; padding:6px 8px; border:1px solid #b9c4b3; border-radius:8px; margin-bottom:6px; }
+  .editbox .row { display:flex; gap:6px; flex-wrap:wrap; }
+  .editbox img.prev { width:100%; height:110px; object-fit:cover; border-radius:8px; margin-bottom:6px; }
+
+  .hint { position:fixed; left:10px; bottom:10px; z-index:70; background:rgba(46,93,52,.85); color:#fff;
+    font-size:12px; padding:8px 14px; border-radius:16px; max-width:70vw; }
+  .toast { position:fixed; top:60px; left:50%; transform:translateX(-50%); background:#243324; color:#fff;
+    font-size:13px; padding:10px 18px; border-radius:20px; z-index:100; display:none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🗺️ 現場フォトマップ・メーカー</h1><span class="ver">v01</span>
+  <span class="steps">①下絵を読む → ②建物を描く → ③写真を読む → ④ルートを引く → ⑤自動配置 → ⑥微調整 → ⑦書き出し</span>
+</header>
+
+<div class="bar">
+  <b>読み込み</b>
+  <button class="btn" onclick="document.getElementById('bgFile').click()">🛰️ 上空図</button>
+  <input type="file" id="bgFile" accept="image/*" hidden>
+  <button class="btn" onclick="document.getElementById('phFiles').click()">📷 写真（複数）</button>
+  <input type="file" id="phFiles" accept="image/*" multiple hidden>
+  <label>回転 <input type="range" id="rot" min="-180" max="180" value="0" step="1"><span id="rotV">0°</span></label>
+  <label>下絵の濃さ <input type="range" id="op" min="0" max="100" value="60"></label>
+</div>
+<div class="bar">
+  <b>モード</b>
+  <button class="btn on" data-mode="rect" onclick="setMode('rect')">⬛ 建物を描く</button>
+  <button class="btn" data-mode="select" onclick="setMode('select')">👆 選ぶ・動かす</button>
+  <button class="btn" data-mode="route" onclick="setMode('route')">✏️ ルート</button>
+  <button class="btn" data-mode="pin" onclick="setMode('pin')">📍 ピン調整</button>
+  <select id="rectKind">
+    <option value="bld">建物（ベージュ）</option>
+    <option value="green">緑地・畑（みどり）</option>
+    <option value="road">道路・通路（グレー）</option>
+    <option value="park">駐車場（点線）</option>
+    <option value="water">水路・池（あお）</option>
+  </select>
+  <button class="btn gold" onclick="autoPlace()">🎯 写真をルートに自動配置</button>
+  <button class="btn" onclick="undoRoute()">↩ ルート1点戻す</button>
+  <button class="btn warn" onclick="clearRoute()">ルート消去</button>
+</div>
+<div class="bar">
+  <b>保存</b>
+  <button class="btn" onclick="exportHTML()">📄 閲覧用HTMLを書き出し</button>
+  <button class="btn" onclick="saveProject()">💾 プロジェクト保存</button>
+  <button class="btn" onclick="document.getElementById('projFile').click()">📂 プロジェクトを開く</button>
+  <input type="file" id="projFile" accept=".json" hidden>
+  <label>現場名 <input type="text" id="siteName" value="現場フォトマップ" style="font-size:12px;padding:5px 8px;border:1px solid #b9c4b3;border-radius:8px;width:180px;"></label>
+</div>
+
+<div class="stage-wrap">
+  <div class="stage" id="stage">
+    <svg id="svg" viewBox="0 0 950 720" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="0" width="950" height="720" fill="#e6e2d6"/>
+      <g id="bgG"></g>
+      <g id="rectG"></g>
+      <g id="routeG"></g>
+      <rect id="hitrect" x="0" y="0" width="950" height="720" fill="transparent"/>
+    </svg>
+    <div id="pinLayer"></div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>📷 写真（ファイル名順＝撮った順） <span id="phCnt" style="color:#7a8f7a;font-weight:normal;"></span></h2>
+  <div class="thumbs" id="thumbs"></div>
+</div>
+
+<div class="editbox" id="editbox">
+  <h3 id="ebTitle">編集</h3>
+  <img class="prev" id="ebImg" style="display:none;">
+  <input type="text" id="ebName" placeholder="名前">
+  <div class="row">
+    <button class="btn" onclick="applyEdit()">✔ 決定</button>
+    <button class="btn warn" onclick="deleteSel()">🗑 削除</button>
+    <button class="btn" onclick="closeEdit()">閉じる</button>
+  </div>
+</div>
+
+<div class="hint" id="hint">まず「🛰️ 上空図」でGoogleマップのスクリーンショットを読み込むのだ…ではなく、読み込んでください🌿</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= 状態 ================= */
+const S = {
+  bg: null,           // {dataURL, rot, op}
+  rects: [],          // {x,y,w,h,kind,label}
+  route: [],          // [{x,y}]  (SVG座標)
+  photos: [],         // {name, url(dataURL)}
+  spots: [],          // {file, x, y, name}  x,y = SVG座標
+};
+let mode = 'rect';
+let sel = null;       // {type:'rect'|'spot', idx}
+let drawing = null;   // 描画中rect
+let dragging = null;  // {type, idx, dx, dy}
+
+const svg = document.getElementById('svg');
+const KINDS = {
+  bld:   { fill:'#dcd4c0', stroke:'#6d675a', dash:'' },
+  green: { fill:'#cfe5b4', stroke:'#7fa456', dash:'' },
+  road:  { fill:'#a9aeae', stroke:'#8a8f8f', dash:'' },
+  park:  { fill:'#dfe6db', stroke:'#9aa895', dash:'6 4' },
+  water: { fill:'#cfe0ef', stroke:'#6d92b4', dash:'' },
+};
+
+/* ================= ユーティリティ ================= */
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.style.display='block';
+  clearTimeout(t._tm); t._tm=setTimeout(()=>t.style.display='none', 2600); }
+function hint(m){ document.getElementById('hint').textContent = m; }
+function svgPoint(ev){
+  const pt = svg.createSVGPoint();
+  pt.x = ev.clientX; pt.y = ev.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+/* ================= 背景（上空図） ================= */
+document.getElementById('bgFile').addEventListener('change', e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ()=>{ S.bg = { dataURL:r.result, rot:+document.getElementById('rot').value, op:+document.getElementById('op').value }; renderBg();
+    hint('② モード「⬛建物を描く」で、下絵をなぞって四角を描いてください（種類は右のプルダウン）'); };
+  r.readAsDataURL(f);
+});
+document.getElementById('rot').addEventListener('input', e=>{
+  document.getElementById('rotV').textContent = e.target.value+'°';
+  if(S.bg){ S.bg.rot = +e.target.value; renderBg(); }
+});
+document.getElementById('op').addEventListener('input', e=>{ if(S.bg){ S.bg.op = +e.target.value; renderBg(); } });
+
+function renderBg(){
+  const g = document.getElementById('bgG');
+  g.innerHTML = '';
+  if(!S.bg) return;
+  const img = document.createElementNS('http://www.w3.org/2000/svg','image');
+  img.setAttribute('href', S.bg.dataURL);
+  img.setAttribute('x', -180); img.setAttribute('y', -180);
+  img.setAttribute('width', 1310); img.setAttribute('height', 1080);
+  img.setAttribute('preserveAspectRatio','xMidYMid slice');
+  img.setAttribute('opacity', S.bg.op/100);
+  img.setAttribute('transform', `rotate(${S.bg.rot} 475 360)`);
+  g.appendChild(img);
+}
+
+/* ================= 写真 ================= */
+document.getElementById('phFiles').addEventListener('change', e=>{
+  const files = [...e.target.files].sort((a,b)=>a.name.localeCompare(b.name,'ja'));
+  let loaded = 0;
+  files.forEach(f=>{
+    const r = new FileReader();
+    r.onload = ()=>{ S.photos.push({name:f.name, url:r.result}); loaded++;
+      if(loaded===files.length){ S.photos.sort((a,b)=>a.name.localeCompare(b.name,'ja')); renderThumbs();
+        hint('③ モード「✏️ルート」で、歩いた順に地図をタップして線を引いてください → 「🎯自動配置」'); } };
+    r.readAsDataURL(f);
+  });
+});
+function renderThumbs(){
+  const box = document.getElementById('thumbs'); box.innerHTML='';
+  const placedFiles = new Set(S.spots.map(s=>s.file));
+  S.photos.forEach((p,i)=>{
+    const d = document.createElement('div');
+    d.className = 'ph' + (placedFiles.has(p.name)?' placed':'');
+    d.innerHTML = `<span class="n">${i+1}</span><img src="${p.url}" title="${p.name}">`;
+    d.onclick = ()=>{ const si = S.spots.findIndex(s=>s.file===p.name);
+      if(si>=0){ selectSpot(si); } else { toast('未配置の写真です。ルートを引いて🎯自動配置してください'); } };
+    box.appendChild(d);
+  });
+  document.getElementById('phCnt').textContent = S.photos.length ? `${S.photos.length}枚` : '';
+}
+
+/* ================= モード ================= */
+function setMode(m){
+  mode = m; sel = null; closeEdit(); renderAll();
+  document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('on', b.dataset.mode===m));
+  const msgs = { rect:'ドラッグで四角を描く（種類はプルダウン）', select:'四角をタップ→ドラッグで移動、編集ボックスで名前変更',
+    route:'歩いた順に地図をタップ（↩で1点戻す）', pin:'ピンをドラッグで微調整、タップで名前変更' };
+  hint(msgs[m]);
+}
+
+/* ================= 矩形描画・編集 ================= */
+svg.addEventListener('pointerdown', ev=>{
+  const p = svgPoint(ev);
+  if(mode==='rect'){
+    drawing = { x:p.x, y:p.y, w:0, h:0, kind:document.getElementById('rectKind').value, label:'' };
+    svg.setPointerCapture(ev.pointerId);
+  } else if(mode==='route'){
+    S.route.push({x:p.x, y:p.y}); renderRoute();
+  } else if(mode==='select'){
+    const idx = hitRect(p);
+    if(idx>=0){ sel={type:'rect',idx}; const r=S.rects[idx];
+      dragging={type:'rect',idx,dx:p.x-r.x,dy:p.y-r.y}; svg.setPointerCapture(ev.pointerId);
+      openEditRect(idx); }
+    else { sel=null; closeEdit(); }
+    renderRects();
+  }
+});
+svg.addEventListener('pointermove', ev=>{
+  const p = svgPoint(ev);
+  if(mode==='rect' && drawing){
+    drawing.w = p.x - drawing.x; drawing.h = p.y - drawing.y; renderRects();
+  } else if(dragging && dragging.type==='rect'){
+    const r = S.rects[dragging.idx];
+    r.x = p.x - dragging.dx; r.y = p.y - dragging.dy; renderRects();
+  }
+});
+svg.addEventListener('pointerup', ev=>{
+  if(mode==='rect' && drawing){
+    let {x,y,w,h} = drawing;
+    if(w<0){x+=w;w=-w;} if(h<0){y+=h;h=-h;}
+    if(w>12 && h>12){ S.rects.push({x,y,w,h,kind:drawing.kind,label:''});
+      sel={type:'rect',idx:S.rects.length-1}; openEditRect(sel.idx); }
+    drawing = null; renderRects();
+  }
+  dragging = null;
+});
+function hitRect(p){
+  for(let i=S.rects.length-1;i>=0;i--){ const r=S.rects[i];
+    if(p.x>=r.x && p.x<=r.x+r.w && p.y>=r.y && p.y<=r.y+r.h) return i; }
+  return -1;
+}
+function renderRects(){
+  const g = document.getElementById('rectG'); g.innerHTML='';
+  const all = drawing ? [...S.rects, drawing] : S.rects;
+  all.forEach((r,i)=>{
+    let {x,y,w,h}=r; if(w<0){x+=w;w=-w;} if(h<0){y+=h;h=-h;}
+    const k = KINDS[r.kind]||KINDS.bld;
+    const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x',x); rect.setAttribute('y',y); rect.setAttribute('width',w); rect.setAttribute('height',h);
+    rect.setAttribute('fill',k.fill); rect.setAttribute('stroke', sel&&sel.type==='rect'&&sel.idx===i ? '#c8a24a' : k.stroke);
+    rect.setAttribute('stroke-width', sel&&sel.type==='rect'&&sel.idx===i ? 3 : 1.5);
+    if(k.dash) rect.setAttribute('stroke-dasharray',k.dash);
+    g.appendChild(rect);
+    if(r.label){
+      const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+      t.setAttribute('x',x+6); t.setAttribute('y',y+16); t.setAttribute('font-size',12); t.setAttribute('fill','#4a4436');
+      t.textContent = r.label; g.appendChild(t);
+    }
+  });
+}
+
+/* ================= ルート ================= */
+function renderRoute(){
+  const g = document.getElementById('routeG'); g.innerHTML='';
+  if(S.route.length<1) return;
+  const pl = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+  pl.setAttribute('points', S.route.map(p=>p.x+','+p.y).join(' '));
+  pl.setAttribute('fill','none'); pl.setAttribute('stroke','#d84a3a'); pl.setAttribute('stroke-width',3);
+  pl.setAttribute('stroke-dasharray','8 6'); pl.setAttribute('opacity',.8);
+  g.appendChild(pl);
+  S.route.forEach((p,i)=>{
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx',p.x); c.setAttribute('cy',p.y); c.setAttribute('r',4);
+    c.setAttribute('fill', i===0?'#2e5d34':'#d84a3a'); g.appendChild(c);
+  });
+}
+function undoRoute(){ S.route.pop(); renderRoute(); }
+function clearRoute(){ S.route=[]; renderRoute(); }
+
+/* ================= 自動配置 ================= */
+function autoPlace(){
+  if(S.photos.length===0){ toast('先に写真を読み込んでください'); return; }
+  if(S.route.length<2){ toast('先にルートを2点以上引いてください'); return; }
+  const segs=[]; let total=0;
+  for(let i=1;i<S.route.length;i++){
+    const a=S.route[i-1], b=S.route[i], L=Math.hypot(b.x-a.x,b.y-a.y);
+    segs.push({a,b,L}); total+=L;
+  }
+  const n = S.photos.length;
+  S.spots = S.photos.map((p,i)=>{
+    const t = n===1 ? 0 : (i/(n-1))*total;
+    let acc=0, pos=S.route[0];
+    for(const s of segs){
+      if(t<=acc+s.L){ const u=(t-acc)/s.L; pos={x:s.a.x+(s.b.x-s.a.x)*u, y:s.a.y+(s.b.y-s.a.y)*u}; break; }
+      acc+=s.L; pos=s.b;
+    }
+    const old = S.spots.find(sp=>sp.file===p.name);
+    return { file:p.name, x:pos.x, y:pos.y, name: old?old.name : `写真${i+1}` };
+  });
+  setMode('pin'); renderAll();
+  toast(`${n}枚をルートに沿って配置しました。ピンをドラッグして微調整→タップで名前`);
+}
+
+/* ================= ピン ================= */
+function renderPins(){
+  const layer = document.getElementById('pinLayer'); layer.innerHTML='';
+  S.spots.forEach((s,i)=>{
+    const pin = document.createElement('div');
+    pin.className = 'pin' + (sel&&sel.type==='spot'&&sel.idx===i?' sel':'');
+    pin.style.left = (s.x/950*100)+'%';
+    pin.style.top  = (s.y/720*100)+'%';
+    pin.innerHTML = `<div class="dot">${i+1}</div><div class="lbl">${s.name}</div>`;
+    pin.addEventListener('pointerdown', ev=>{
+      if(mode!=='pin') return;
+      ev.preventDefault(); ev.stopPropagation();
+      pin.setPointerCapture(ev.pointerId);
+      const move = e2=>{ const p=svgPoint(e2); s.x=Math.max(0,Math.min(950,p.x)); s.y=Math.max(0,Math.min(720,p.y));
+        pin.style.left=(s.x/950*100)+'%'; pin.style.top=(s.y/720*100)+'%'; pin._moved=true; };
+      const up = ()=>{ pin.removeEventListener('pointermove',move); pin.removeEventListener('pointerup',up);
+        if(!pin._moved){ selectSpot(i); } pin._moved=false; };
+      pin.addEventListener('pointermove',move); pin.addEventListener('pointerup',up);
+    });
+    layer.appendChild(pin);
+  });
+  renderThumbs();
+}
+function selectSpot(i){
+  sel = {type:'spot', idx:i}; renderPins();
+  const s = S.spots[i];
+  const p = S.photos.find(p=>p.name===s.file);
+  document.getElementById('ebTitle').textContent = `📍 ${i+1}番の場所`;
+  const img = document.getElementById('ebImg');
+  if(p){ img.src=p.url; img.style.display='block'; } else img.style.display='none';
+  document.getElementById('ebName').value = s.name;
+  document.getElementById('editbox').classList.add('show');
+}
+function openEditRect(i){
+  sel = {type:'rect', idx:i};
+  document.getElementById('ebTitle').textContent = '⬛ 四角の名前';
+  document.getElementById('ebImg').style.display='none';
+  document.getElementById('ebName').value = S.rects[i].label||'';
+  document.getElementById('editbox').classList.add('show');
+}
+function applyEdit(){
+  if(!sel) return;
+  const v = document.getElementById('ebName').value.trim();
+  if(sel.type==='rect') S.rects[sel.idx].label = v;
+  else S.spots[sel.idx].name = v || S.spots[sel.idx].name;
+  closeEdit(); renderAll();
+}
+function deleteSel(){
+  if(!sel) return;
+  if(sel.type==='rect') S.rects.splice(sel.idx,1);
+  else S.spots.splice(sel.idx,1);
+  sel=null; closeEdit(); renderAll();
+}
+function closeEdit(){ document.getElementById('editbox').classList.remove('show'); }
+
+function renderAll(){ renderBg(); renderRects(); renderRoute(); renderPins(); }
+
+/* ================= プロジェクト保存・読込 ================= */
+function saveProject(){
+  const data = JSON.stringify({...S, siteName:document.getElementById('siteName').value});
+  dl(new Blob([data],{type:'application/json'}), (document.getElementById('siteName').value||'現場マップ')+'_プロジェクト.json');
+  toast('プロジェクトを保存しました（写真も含むので大きめのファイルです）');
+}
+document.getElementById('projFile').addEventListener('change', e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ const d=JSON.parse(r.result);
+    S.bg=d.bg; S.rects=d.rects||[]; S.route=d.route||[]; S.photos=d.photos||[]; S.spots=d.spots||[];
+    if(d.siteName) document.getElementById('siteName').value=d.siteName;
+    if(S.bg){ document.getElementById('rot').value=S.bg.rot; document.getElementById('rotV').textContent=S.bg.rot+'°';
+      document.getElementById('op').value=S.bg.op; }
+    renderAll(); renderThumbs(); toast('プロジェクトを読み込みました'); };
+  r.readAsText(f);
+});
+function dl(blob, name){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+}
+
+/* ================= 閲覧用HTML書き出し（shanaimap形式） ================= */
+async function exportHTML(){
+  if(S.spots.length===0){ toast('写真の配置がまだです（🎯自動配置）'); return; }
+  const site = document.getElementById('siteName').value || '現場フォトマップ';
+  // 航空写真：回転を焼き込んだ画像を作る
+  let aerial = '';
+  if(S.bg){
+    aerial = await new Promise(res=>{
+      const im = new Image();
+      im.onload = ()=>{ const cv=document.createElement('canvas'); cv.width=950; cv.height=720;
+        const ctx=cv.getContext('2d'); ctx.fillStyle='#e6e2d6'; ctx.fillRect(0,0,950,720);
+        ctx.translate(475,360); ctx.rotate(S.bg.rot*Math.PI/180);
+        const sc=Math.max(1310/im.width,1080/im.height);
+        ctx.drawImage(im,-im.width*sc/2,-im.height*sc/2,im.width*sc,im.height*sc);
+        res(cv.toDataURL('image/jpeg',.8)); };
+      im.src = S.bg.dataURL;
+    });
+  }
+  const rectsSvg = S.rects.map(r=>{
+    const k=KINDS[r.kind]||KINDS.bld;
+    return `<rect x="${r.x.toFixed(0)}" y="${r.y.toFixed(0)}" width="${r.w.toFixed(0)}" height="${r.h.toFixed(0)}" fill="${k.fill}" stroke="${k.stroke}" stroke-width="1.5"${k.dash?` stroke-dasharray="${k.dash}"`:''}/>`+
+      (r.label?`<text x="${(r.x+6).toFixed(0)}" y="${(r.y+16).toFixed(0)}" font-size="12" fill="#4a4436">${r.label}</text>`:'');
+  }).join('\n      ');
+  const spots = S.spots.map((s,i)=>
+    `{no:${i+1},file:${JSON.stringify(s.file)},x:${(s.x/950*100).toFixed(1)},y:${(s.y/720*100).toFixed(1)},name:${JSON.stringify(s.name)}}`).join(',\n');
+
+  const html = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>${site}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { font-family:"Yu Gothic UI","Hiragino Sans",Meiryo,sans-serif; background:#dfe3da; color:#243324; overflow-x:hidden; }
+  .titlebar { position:fixed; top:8px; left:8px; z-index:60; background:rgba(46,93,52,.55); color:#fff;
+    backdrop-filter:blur(4px); padding:6px 12px; border-radius:20px; font-size:13px; font-weight:bold;
+    box-shadow:0 1px 6px rgba(0,0,0,.25); cursor:pointer; }
+  .toolbar { position:fixed; top:8px; right:8px; z-index:60; display:flex; gap:6px; }
+  .modebtn { font-size:12px; padding:7px 11px; border-radius:18px; border:none; background:rgba(255,255,255,.9);
+    color:#2e5d34; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.2); }
+  .map-wrap { display:flex; justify-content:center; align-items:center; min-height:100vh; min-height:100dvh; padding:4px; }
+  .map-inner { position:relative; width:100%; max-width:calc(96vh * 1.319); max-width:calc(96dvh * 1.319); }
+  .map-inner svg, .map-inner img.aerial { width:100%; display:block; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.2); }
+  .map-inner img.aerial { display:none; }
+  body.photo .map-inner svg { display:none; }
+  body.photo .map-inner img.aerial { display:block; }
+  .pin { position:absolute; transform:translate(-50%,-50%); cursor:pointer; z-index:5; display:flex; flex-direction:column; align-items:center; }
+  .pin .dot { width:24px; height:24px; border-radius:50%; background:#d84a3a; border:2px solid #fff;
+    box-shadow:0 1px 4px rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; font-weight:bold; }
+  .pin .lbl { margin-top:2px; background:rgba(255,255,255,.92); font-size:9px; font-weight:bold; padding:1px 5px;
+    border-radius:7px; white-space:nowrap; box-shadow:0 1px 2px rgba(0,0,0,.4); max-width:110px; overflow:hidden; text-overflow:ellipsis; }
+  body:not(.showlbl) .pin .lbl { display:none; }
+  .list { padding:14px 12px 40px; max-width:900px; margin:0 auto; }
+  .list h2 { font-size:14px; color:#2e5d34; margin:6px 2px 8px; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; }
+  .card { background:#fff; border-radius:10px; padding:8px 10px; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.08);
+    display:flex; align-items:center; gap:9px; }
+  .card .num { flex:none; width:26px; height:26px; border-radius:50%; background:#d84a3a; color:#fff; font-size:12px;
+    font-weight:bold; display:flex; align-items:center; justify-content:center; }
+  .card .thumb { flex:none; width:42px; height:42px; border-radius:6px; object-fit:cover; }
+  .card .nm { font-size:13px; font-weight:bold; }
+  .viewer { position:fixed; inset:0; background:rgba(0,0,0,.92); z-index:200; display:none; }
+  .viewer.show { display:block; }
+  .viewer img.vimg { position:absolute; inset:0; width:100%; height:100%; cursor:pointer; }
+  .viewer img.vimg.zoom { object-fit:cover; } .viewer img.vimg.fit { object-fit:contain; }
+  .vtop { position:absolute; top:0; left:0; right:0; z-index:2; display:flex; align-items:center; gap:10px;
+    padding:10px 12px; background:linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,0)); color:#fff; pointer-events:none; }
+  .vtop .vname { font-size:15px; font-weight:bold; flex:1; }
+  .vtop .vclose { pointer-events:auto; background:rgba(255,255,255,.25); border:none; color:#fff; width:34px; height:34px;
+    border-radius:50%; font-size:17px; cursor:pointer; }
+  .vnav { position:absolute; top:50%; transform:translateY(-50%); z-index:2; width:44px; height:64px; border:none;
+    border-radius:10px; background:rgba(255,255,255,.16); color:#fff; font-size:30px; cursor:pointer; }
+  .vnav.prev{left:8px;} .vnav.next{right:8px;}
+  @media (pointer:coarse){ .pin .dot{width:32px;height:32px;font-size:15px;} .pin .lbl{font-size:11px;} }
+  @media print {
+    @page { size:A4 portrait; margin:10mm; }
+    * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    body { background:#fff; }
+    .toolbar,.titlebar,.viewer { display:none !important; }
+    .map-wrap { min-height:auto; page-break-after:always; }
+    body .pin .lbl { display:block !important; }
+    .card { box-shadow:none; border:1px solid #bbb; page-break-inside:avoid; }
+  }
+</style>
+</head>
+<body class="showlbl">
+<div class="titlebar">🌲 ${site}</div>
+<div class="toolbar">
+  ${aerial?'<button class="modebtn" onclick="toggleBg(this)">📷 航空写真</button>':''}
+  <button class="modebtn" onclick="document.body.classList.toggle('showlbl')">🏷️ 名前</button>
+  <button class="modebtn" onclick="window.print()">🖨️</button>
+</div>
+<div class="map-wrap"><div class="map-inner" id="mapInner">
+  <svg viewBox="0 0 950 720" xmlns="http://www.w3.org/2000/svg" font-family="'Yu Gothic UI','Hiragino Sans',Meiryo,sans-serif">
+    <rect x="0" y="0" width="950" height="720" fill="#e6e2d6"/>
+    ${rectsSvg}
+    <text x="620" y="712" font-size="11" fill="#8a8f85">※おおよその配置イメージ図です（縮尺・形は目安）</text>
+  </svg>
+  ${aerial?`<img class="aerial" src="${aerial}" alt="上空写真">`:''}
+</div></div>
+<div class="list"><h2>📋 写真一覧（${S.spots.length}枚）タップで拡大</h2><div class="cards" id="cards"></div></div>
+<div class="viewer" id="viewer">
+  <img class="vimg zoom" id="vImg" src="" onclick="cycleViewer()">
+  <div class="vtop"><span class="vname" id="vName"></span>
+    <button class="vclose" onclick="event.stopPropagation();closeViewer()">✕</button></div>
+  <button class="vnav prev" onclick="event.stopPropagation();navViewer(-1)">‹</button>
+  <button class="vnav next" onclick="event.stopPropagation();navViewer(1)">›</button>
+</div>
+<script>
+const SPOTS = [
+${spots}
+];
+const mapInner=document.getElementById('mapInner'), cards=document.getElementById('cards');
+let curIdx=null, vState='zoom';
+SPOTS.forEach((s,idx)=>{
+  const pin=document.createElement('div'); pin.className='pin';
+  pin.style.left=s.x+'%'; pin.style.top=s.y+'%';
+  pin.innerHTML='<div class="dot">'+s.no+'</div><div class="lbl">'+s.name+'</div>';
+  pin.onclick=e=>{e.stopPropagation();openViewer(idx);}; mapInner.appendChild(pin);
+  const card=document.createElement('div'); card.className='card';
+  card.innerHTML='<div class="num">'+s.no+'</div><img class="thumb" src="写真/'+s.file+'" loading="lazy"><div class="nm">'+s.name+'</div>';
+  card.onclick=()=>openViewer(idx); cards.appendChild(card);
+});
+function openViewer(i){curIdx=i;vState='zoom';apply();document.getElementById('viewer').classList.add('show');}
+function apply(){const s=SPOTS[curIdx],img=document.getElementById('vImg');
+  img.src='写真/'+s.file; img.className='vimg '+vState;
+  document.getElementById('vName').textContent=s.no+'. '+s.name;}
+function cycleViewer(){ if(vState==='zoom'){vState='fit';apply();} else closeViewer(); }
+function navViewer(d){ curIdx=(curIdx+d+SPOTS.length)%SPOTS.length; vState='zoom'; apply(); }
+function closeViewer(){ document.getElementById('viewer').classList.remove('show'); }
+function toggleBg(b){ document.body.classList.toggle('photo');
+  b.textContent = document.body.classList.contains('photo') ? '🗺️ 平面図' : '📷 航空写真'; }
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('viewer').classList.contains('show'))return;
+  if(e.key==='Escape')closeViewer(); if(e.key==='ArrowLeft')navViewer(-1); if(e.key==='ArrowRight')navViewer(1);});
+<\/script>
+</body>
+</html>`;
+  dl(new Blob([html],{type:'text/html'}), site+'.html');
+  toast('書き出しました。同じ場所に「写真」フォルダ（元の写真入り）を置くと表示されます');
+}
+
+setMode('rect');
+</script>
+</body>
+</html>
