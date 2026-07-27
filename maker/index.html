@@ -46,7 +46,11 @@
   .thumbs .ph.placed .n { background:#2e5d34; }
   .thumbs .ph.sel img { border-color:#c8a24a; }
 
-  .editbox { position:fixed; right:10px; bottom:10px; z-index:80; background:#fff; border-radius:12px;
+  .titlebox { position:fixed; right:10px; bottom:10px; z-index:75; background:#fff; border-radius:12px;
+    box-shadow:0 3px 14px rgba(0,0,0,.25); padding:8px 12px 10px; width:230px; }
+  .titlebox label { font-size:11px; color:#5a6e5a; font-weight:bold; display:block; margin-bottom:4px; }
+  .titlebox input { width:100%; font-size:14px; font-weight:bold; padding:7px 9px; border:2px solid #2e5d34; border-radius:8px; color:#243324; }
+  .editbox { position:fixed; right:10px; bottom:96px; z-index:80; background:#fff; border-radius:12px;
     box-shadow:0 3px 14px rgba(0,0,0,.3); padding:10px 12px; width:230px; display:none; }
   .editbox.show { display:block; }
   .editbox h3 { font-size:12px; color:#2e5d34; margin-bottom:6px; }
@@ -99,7 +103,6 @@
   <button class="btn" onclick="saveProject()">💾 プロジェクト保存</button>
   <button class="btn" onclick="document.getElementById('projFile').click()">📂 プロジェクトを開く</button>
   <input type="file" id="projFile" accept=".json" hidden>
-  <label>現場名 <input type="text" id="siteName" value="現場フォトマップ" style="font-size:12px;padding:5px 8px;border:1px solid #b9c4b3;border-radius:8px;width:180px;"></label>
 </div>
 
 <div class="stage-wrap">
@@ -118,6 +121,11 @@
 <div class="panel">
   <h2>📷 写真（ファイル名順＝撮った順） <span id="phCnt" style="color:#7a8f7a;font-weight:normal;"></span></h2>
   <div class="thumbs" id="thumbs"></div>
+</div>
+
+<div class="titlebox">
+  <label>🏷️ 題名（完成品の左上に表示・ファイル名にもなります）</label>
+  <input type="text" id="siteName" value="現場フォトマップ" onchange="autosave()">
 </div>
 
 <div class="editbox" id="editbox">
