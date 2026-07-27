@@ -388,7 +388,34 @@ function deleteSel(){
 }
 function closeEdit(){ document.getElementById('editbox').classList.remove('show'); }
 
-function renderAll(){ renderBg(); renderRects(); renderRoute(); renderPins(); }
+function renderAll(){ renderBg(); renderRects(); renderRoute(); renderPins(); autosave(); }
+
+/* ===== 自動下書き保存（写真以外・再読み込みしても残る） ===== */
+function autosave(){
+  try{
+    localStorage.setItem('pm_draft', JSON.stringify({
+      bg:S.bg, rects:S.rects, route:S.route, spots:S.spots,
+      siteName:document.getElementById('siteName').value, t:new Date().toLocaleString('ja-JP')
+    }));
+  }catch(e){ /* 容量超過時は下絵なしで再試行 */
+    try{ localStorage.setItem('pm_draft', JSON.stringify({
+      bg:null, rects:S.rects, route:S.route, spots:S.spots,
+      siteName:document.getElementById('siteName').value, t:new Date().toLocaleString('ja-JP')
+    })); }catch(e2){}
+  }
+}
+function restoreDraft(){
+  try{
+    const d = JSON.parse(localStorage.getItem('pm_draft')||'null');
+    if(!d || ((d.rects||[]).length===0 && (d.route||[]).length===0 && (d.spots||[]).length===0)) return;
+    S.bg=d.bg; S.rects=d.rects||[]; S.route=d.route||[]; S.spots=d.spots||[];
+    if(d.siteName) document.getElementById('siteName').value=d.siteName;
+    if(S.bg){ document.getElementById('rot').value=S.bg.rot; document.getElementById('rotV').textContent=S.bg.rot+'°';
+      document.getElementById('op').value=S.bg.op; }
+    renderBg(); renderRects(); renderRoute(); renderPins();
+    toast('前回の下書き（'+(d.t||'')+'）を復元しました。写真は「📷写真」から入れ直してください');
+  }catch(e){}
+}
 
 /* ================= プロジェクト保存・読込 ================= */
 function saveProject(){
@@ -492,14 +519,21 @@ async function exportHTML(embed){
     border-radius:10px; background:rgba(255,255,255,.16); color:#fff; font-size:30px; cursor:pointer; }
   .vnav.prev{left:8px;} .vnav.next{right:8px;}
   @media (pointer:coarse){ .pin .dot{width:32px;height:32px;font-size:15px;} .pin .lbl{font-size:11px;} }
+  .printsheet { display:none; }
   @media print {
     @page { size:A4 portrait; margin:10mm; }
     * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     body { background:#fff; }
-    .toolbar,.titlebar,.viewer { display:none !important; }
-    .map-wrap { min-height:auto; page-break-after:always; }
+    .toolbar,.titlebar,.viewer,.list { display:none !important; }
+    .map-wrap { min-height:auto; padding:0; page-break-after:always; }
+    .map-inner { max-width:100%; }
     body .pin .lbl { display:block !important; }
-    .card { box-shadow:none; border:1px solid #bbb; page-break-inside:avoid; }
+    .printsheet { display:grid; grid-template-columns:1fr 1fr; gap:6mm 6mm; }
+    .printsheet h2 { grid-column:1/-1; font-size:14pt; color:#1e4034; margin-bottom:2mm; }
+    .printsheet figure { break-inside:avoid; page-break-inside:avoid; margin:0 0 4mm; }
+    .printsheet img { width:100%; height:62mm; object-fit:cover; border:1px solid #888; border-radius:2mm; }
+    .printsheet figcaption { font-size:10.5pt; padding:1mm 0 0; color:#222; }
+    .printsheet figcaption b { color:#1e4034; }
   }
 </style>
 </head>
@@ -519,6 +553,10 @@ async function exportHTML(embed){
   ${aerial?`<img class="aerial" src="${aerial}" alt="上空写真">`:''}
 </div></div>
 <div class="list"><h2>📋 写真一覧（${S.spots.length}枚）タップで拡大</h2><div class="cards" id="cards"></div></div>
+<div class="printsheet"><h2>📷 現場写真台帳 ｜ ${site}</h2>
+${S.spots.map((s,i)=>{ const p=S.photos.find(p=>p.name===s.file); const src=embed?(p?p.url:''):('写真/'+s.file);
+  return `<figure><img src="${src}" loading="lazy"><figcaption><b>${i+1}.</b> ${s.name}</figcaption></figure>`; }).join('\n')}
+</div>
 <div class="viewer" id="viewer">
   <img class="vimg zoom" id="vImg" src="" onclick="cycleViewer()">
   <div class="vtop"><span class="vname" id="vName"></span>
@@ -563,6 +601,7 @@ document.addEventListener('keydown',e=>{
 }
 
 setMode('rect');
+restoreDraft();
 </script>
 </body>
 </html>
