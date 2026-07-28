@@ -197,9 +197,9 @@ function renderBg(){
   if(!S.bg) return;
   const img = document.createElementNS('http://www.w3.org/2000/svg','image');
   img.setAttribute('href', S.bg.dataURL);
-  img.setAttribute('x', -180); img.setAttribute('y', -180);
-  img.setAttribute('width', 1310); img.setAttribute('height', 1080);
-  img.setAttribute('preserveAspectRatio','xMidYMid slice');
+  img.setAttribute('x', 0); img.setAttribute('y', 0);
+  img.setAttribute('width', 950); img.setAttribute('height', 720);
+  img.setAttribute('preserveAspectRatio','xMidYMid meet');
   img.setAttribute('opacity', S.bg.op/100);
   img.setAttribute('transform', `rotate(${S.bg.rot} 475 360)`);
   g.appendChild(img);
@@ -491,7 +491,7 @@ async function buildHTML(embed){
       im.onload = ()=>{ const cv=document.createElement('canvas'); cv.width=950; cv.height=720;
         const ctx=cv.getContext('2d'); ctx.fillStyle='#e6e2d6'; ctx.fillRect(0,0,950,720);
         ctx.translate(475,360); ctx.rotate(S.bg.rot*Math.PI/180);
-        const sc=Math.max(1310/im.width,1080/im.height);
+        const sc=Math.min(950/im.width,720/im.height);
         ctx.drawImage(im,-im.width*sc/2,-im.height*sc/2,im.width*sc,im.height*sc);
         res(cv.toDataURL('image/jpeg',.8)); };
       im.src = S.bg.dataURL;
