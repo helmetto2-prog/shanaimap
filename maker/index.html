@@ -93,7 +93,8 @@
     <option value="park">駐車場（点線）</option>
     <option value="water">水路・池（あお）</option>
   </select>
-  <button class="btn gold" onclick="autoPlace()">🎯 写真をルートに自動配置</button>
+  <button class="btn gold" onclick="autoPlace(false)">🎯 自動配置（線の最初＝写真①）</button>
+  <button class="btn gold" onclick="autoPlace(true)">🔁 逆から配置（線の最初＝最後の写真）</button>
   <button class="btn" onclick="undoRoute()">↩ ルート1点戻す</button>
   <button class="btn warn" onclick="clearRoute()">ルート消去</button>
 </div>
@@ -320,7 +321,7 @@ function undoRoute(){ S.route.pop(); renderRoute(); }
 function clearRoute(){ S.route=[]; renderRoute(); }
 
 /* ================= 自動配置 ================= */
-function autoPlace(){
+function autoPlace(rev){
   if(S.photos.length===0){ toast('先に写真を読み込んでください'); return; }
   if(S.route.length<2){ toast('先にルートを2点以上引いてください'); return; }
   const segs=[]; let total=0;
@@ -330,7 +331,8 @@ function autoPlace(){
   }
   const n = S.photos.length;
   S.spots = S.photos.map((p,i)=>{
-    const t = n===1 ? 0 : (i/(n-1))*total;
+    const k = rev ? (n-1-i) : i;
+    const t = n===1 ? 0 : (k/(n-1))*total;
     let acc=0, pos=S.route[0];
     for(const s of segs){
       if(t<=acc+s.L){ const u=(t-acc)/s.L; pos={x:s.a.x+(s.b.x-s.a.x)*u, y:s.a.y+(s.b.y-s.a.y)*u}; break; }
@@ -340,7 +342,8 @@ function autoPlace(){
     return { file:p.name, x:pos.x, y:pos.y, name: old?old.name : `写真${i+1}` };
   });
   setMode('pin'); renderAll();
-  toast(`${n}枚をルートに沿って配置しました。ピンをドラッグして微調整→タップで名前`);
+  toast(rev ? `${n}枚を逆順で配置しました（線の最初＝写真${n}、線の最後＝写真①）`
+            : `${n}枚を配置しました（線の最初＝写真①、線の最後＝写真${n}）`);
 }
 
 /* ================= ピン ================= */
