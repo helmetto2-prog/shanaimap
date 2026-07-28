@@ -235,7 +235,7 @@ function renderThumbs(){
 function setMode(m){
   mode = m; sel = null; closeEdit(); renderAll();
   document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('on', b.dataset.mode===m));
-  const msgs = { rect:'ドラッグで四角を描く（種類はプルダウン）', select:'四角をタップ→移動・名前変更／ピンをダブルクリックで青（入口）⇔赤',
+  const msgs = { rect:'ドラッグで四角を描く（種類はプルダウン）', select:'四角やピンをドラッグで移動・タップで名前変更／ピンをダブルクリックで青（入口）⇔赤',
     route:'歩いた順に地図をタップ（↩で1点戻す）', pin:'ピンをドラッグで微調整、タップで名前変更、ダブルクリックで青（入口表示）⇔赤' };
   hint(msgs[m]);
 }
@@ -356,7 +356,7 @@ function renderPins(){
     pin.style.top  = (s.y/720*100)+'%';
     pin.innerHTML = `<div class="dot">${i+1}</div><div class="lbl">${s.name}</div>`;
     pin.addEventListener('pointerdown', ev=>{
-      if(mode!=='pin') return;
+      if(mode!=='pin' && mode!=='select') return;
       ev.preventDefault(); ev.stopPropagation();
       pin.setPointerCapture(ev.pointerId);
       const move = e2=>{ const p=svgPoint(e2); s.x=Math.max(0,Math.min(950,p.x)); s.y=Math.max(0,Math.min(720,p.y));
