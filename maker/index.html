@@ -664,10 +664,10 @@ async function publishAndLine(){
   const msg = '🗺️ '+r.site+'\\n\\n📍 '+url+' \\n\\nスマホで開いて、ピンか写真一覧をタップすると現場写真が見られます。';
   let d=null;
   try{
-    d = await fetch('https://api.github.com/repos/helmetto2-prog/fx-race-line/actions/workflows/notify.yml/dispatches', {
+    d = await fetch('https://api.github.com/repos/helmetto2-prog/fx-race-line/dispatches', {
       method:'POST',
       headers:{ 'Authorization':'Bearer '+token, 'Accept':'application/vnd.github+json' },
-      body: JSON.stringify({ ref:'main', inputs:{ message: msg } })
+      body: JSON.stringify({ event_type:'line-notify', client_payload:{ message: msg } })
     });
   }catch(e){}
   if(d && d.status===204){
