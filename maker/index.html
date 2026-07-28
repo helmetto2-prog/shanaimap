@@ -440,6 +440,7 @@ function dispTitle(){
 
 /* ================= プロジェクト保存・読込 ================= */
 function saveProject(){
+  if(!requireSiteName()) return;
   const data = JSON.stringify({...S, siteName:document.getElementById('siteName').value,
     sitePlace:document.getElementById('sitePlace').value});
   dl(new Blob([data],{type:'application/json'}), dispTitle()+'_プロジェクト.json');
@@ -463,7 +464,18 @@ function dl(blob, name){
 }
 
 /* ================= 閲覧用HTML書き出し（shanaimap形式） ================= */
+function requireSiteName(){
+  const el = document.getElementById('siteName');
+  if(!el.value.trim()){
+    toast('⚠️ 工事名を入れてください（保存バー右側の🏗️欄です）');
+    el.focus(); el.style.background='#fdeede';
+    setTimeout(()=>el.style.background='', 2500);
+    return false;
+  }
+  return true;
+}
 async function buildHTML(embed){
+  if(!requireSiteName()) return;
   if(S.spots.length===0){ toast('写真の配置がまだです（🎯自動配置）'); return; }
   const IMGJS = embed
     ? 'const IMG=' + JSON.stringify(Object.fromEntries(
