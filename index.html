@@ -80,6 +80,16 @@
   }
   body:not(.showlbl) .pin .lbl { display:none; }
   .pin.hit .dot { background:#c8a24a; transform:scale(1.15); }
+  /* 枝番（29-1 など）：字が長いので横長の丸に */
+  .pin.sub .dot { width:auto; min-width:22px; padding:0 4px; border-radius:11px; font-size:9px; background:#b8532f; }
+  .pin.sub.hit .dot { background:#c8a24a; }
+  .card.sub .num { font-size:9px; background:#b8532f; }
+  .card .nophoto { flex:none; width:42px; height:42px; border-radius:6px; background:#eceee6; color:#9aa58f;
+    font-size:9px; display:flex; align-items:center; justify-content:center; text-align:center; }
+  .viewer .vnone { position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+    color:#fff; font-size:15px; opacity:.8; }
+  .viewer.nophoto .vnone { display:flex; }
+  .viewer.nophoto img.vimg { opacity:0; }
   .pin.dim { opacity:.25; }
 
   /* ===== 場所一覧（地図の下・スクロールで表示） ===== */
@@ -134,6 +144,7 @@
     /* 2026-11-15 番号を半分の大きさに（32px→16px）。重なる所は「＋ 大きく」で地図を広げて押す */
     .pin .dot { width:16px; height:16px; font-size:9px; border-width:1.5px; }
     .pin .lbl { font-size:9px; max-width:96px; padding:1px 4px; }
+    .pin.sub .dot { min-width:16px; padding:0 3px; font-size:8px; }
     .toolbar input[type="text"] { width:170px; padding:11px 14px; font-size:16px; }
     .modebtn { font-size:14px; padding:11px 14px; }
     .titlebar { font-size:14px; padding:9px 14px; }
@@ -202,7 +213,7 @@
 </div>
 
 <div class="toolbar">
-  <input type="text" id="q" placeholder="🔍 場所を検索">
+  <input type="text" id="q" placeholder="🔍 場所・道具を検索">
   <div class="modebtn" id="bgBtn" onclick="toggleBg()">📷 航空写真</div>
   <div class="modebtn on" id="lblBtn" onclick="toggleLbl()">🏷️ 名前</div>
   <div class="modebtn" onclick="zoomMap(1)">＋ 大きく</div>
@@ -259,13 +270,19 @@
       <text x="84" y="66" font-size="14" fill="#c0392b" font-weight="bold">⬅ 北入口</text>
 
       <!-- 寮（車1台分ぶん右へ延長 w92→132・右辺242） -->
-      <rect x="110" y="72" width="132" height="66" fill="#dcd4c0" stroke="#6d675a" stroke-width="1.5"/>
-      <text x="162" y="110" font-size="14" fill="#4a4436">寮</text>
+      <!-- 2026-11-15 寮の左（西）に4台ほどの駐車スペース・寮の左下の角にゴミ置き場（寮は右へ40） -->
+      <rect x="80" y="72" width="64" height="66" fill="#dfe6db" stroke="#9aa895" stroke-dasharray="6 4"/>
+      <g stroke="#b7c2b1" stroke-width="2"><line x1="84" y1="88" x2="140" y2="88"/><line x1="84" y1="105" x2="140" y2="105"/><line x1="84" y1="122" x2="140" y2="122"/></g>
+      <text x="92" y="100" font-size="9" fill="#5a6e5a">駐車4台</text>
+      <rect x="150" y="72" width="132" height="66" fill="#dcd4c0" stroke="#6d675a" stroke-width="1.5"/>
+      <rect x="150" y="140" width="40" height="18" fill="#c9c4b4" stroke="#6d675a" stroke-width="1.5"/>
+      <text x="153" y="153" font-size="8" fill="#4a4436">ゴミ置場</text>
+      <text x="208" y="110" font-size="14" fill="#4a4436">寮</text>
 
       <!-- 北社員駐車場（通り道の北・寮と会長畑の間いっぱいに拡張＝たくさん停める） -->
-      <rect x="250" y="55" width="505" height="90" fill="#dfe6db" stroke="#9aa895" stroke-dasharray="6 4"/>
+      <rect x="290" y="55" width="465" height="90" fill="#dfe6db" stroke="#9aa895" stroke-dasharray="6 4"/>
       <g stroke="#b7c2b1" stroke-width="2">
-        <line x1="282" y1="60" x2="282" y2="140"/>
+        
         <line x1="318" y1="60" x2="318" y2="140"/><line x1="354" y1="60" x2="354" y2="140"/>
         <line x1="390" y1="60" x2="390" y2="140"/><line x1="426" y1="60" x2="426" y2="140"/>
         <line x1="462" y1="60" x2="462" y2="140"/><line x1="498" y1="60" x2="498" y2="140"/>
@@ -273,7 +290,7 @@
         <line x1="606" y1="60" x2="606" y2="140"/><line x1="642" y1="60" x2="642" y2="140"/>
         <line x1="678" y1="60" x2="678" y2="140"/><line x1="714" y1="60" x2="714" y2="140"/>
       </g>
-      <text x="300" y="50" font-size="13" fill="#5a6e5a">北社員駐車場（拡張）</text>
+      <text x="330" y="50" font-size="13" fill="#5a6e5a">北社員駐車場（拡張）</text>
 
       <!-- ◆ 右上：会長畑 -->
       <rect x="760" y="45" width="155" height="120" fill="#cfe5b4" stroke="#7fa456" stroke-width="1.5"/>
@@ -319,9 +336,14 @@
         <line x1="565" y1="390" x2="638" y2="390"/><line x1="565" y1="430" x2="638" y2="430"/>
       </g>
       <text x="595" y="360" font-size="12" fill="#fff" font-weight="bold" writing-mode="tb" letter-spacing="1">シャッター庫</text>
+      <!-- 2026-11-15 シャッター庫の中の番号（上＝北から 29-1 〜 29-5） -->
+      <g font-size="8" fill="#fff" font-weight="bold"><text x="568" y="281">29-1</text><text x="568" y="321">29-2</text><text x="568" y="361">29-3</text><text x="568" y="401">29-4</text><text x="568" y="441">29-5</text></g>
       <!-- 新設4棟（シャッター庫と入れ替えて東側へ・南→北: トイレ/板木/竹/コンプレッサー） -->
       <rect x="648" y="429" width="48" height="56" fill="#e6ddef" stroke="#8a7fa0" stroke-width="1.5"/>
       <text x="656" y="461" font-size="9" fill="#5c5470">トイレ</text>
+      <!-- 2026-11-15 洗い場（トイレの下＝南） -->
+      <rect x="656" y="489" width="40" height="28" fill="#cfe3ee" stroke="#6a8fa6" stroke-width="1.5"/>
+      <text x="660" y="507" font-size="8" fill="#3f6076">洗い場</text>
       <rect x="648" y="376" width="48" height="48" fill="#d9c8a2" stroke="#a8905e"/>
       <text x="651" y="399" font-size="8" fill="#8a7040">板木置場</text>
       <rect x="648" y="323" width="48" height="48" fill="#cdd9b0" stroke="#7f9455"/>
@@ -422,7 +444,7 @@
 
       <!-- タンク（横長・屋根駐車場の北辺と同じ長さ80・左右そろえ） -->
       <rect x="835" y="372" width="80" height="30" rx="6" fill="#dde2e8" stroke="#7d8694" stroke-width="2"/>
-      <text x="852" y="392" font-size="11" fill="#4a5260">タンク</text>
+      <text x="846" y="392" font-size="10" fill="#4a5260">雨水タンク</text>
       <!-- タンク横屋根駐車場（南側を階段にした分だけ縮小・縦長・東の一面） -->
       <rect x="835" y="410" width="80" height="140" fill="#a8d3b4" stroke="#2f7d4e" stroke-width="3"/>
       <g fill="#2f7d4e">
@@ -460,6 +482,7 @@
 
 <!-- 写真ビューア：タップで 拡大→全体→閉じる -->
 <div class="viewer" id="viewer">
+  <div class="vnone" onclick="closeViewer()">📷 写真はまだありません（タップで閉じる）</div>
   <img class="vimg zoom" id="vImg" src="" onclick="cycleViewer()">
   <div class="vtop">
     <span class="vname" id="vName"></span>
@@ -501,21 +524,28 @@ const SPOTS = [
 {no:18,file:"KIMG20260706_090737584.JPG",x:38.9,y:69.4,ax:40.9,ay:70.7,floor:"1階",name:"詰所",items:[]},
 {no:19,file:"KIMG20260706_090748356.JPG",x:25.6,y:70.4,ax:34.7,ay:71.9,floor:"1階",name:"農薬庫（北側）",items:[]},
 {no:20,file:"KIMG20260706_090756607.JPG",x:25.6,y:78.1,ax:29.7,ay:71.8,floor:"1階",name:"工具庫（南側）",items:[]},
-{no:21,file:"KIMG20260706_090816413.JPG",x:10,y:88.2,ax:10,ay:60.7,floor:"1階",name:"看板入口",items:[]},
+{no:21,file:"KIMG20260706_090816413.JPG",x:10,y:88.2,ax:10,ay:60.7,floor:"1階",name:"看板",items:[]},
 {no:22,file:"KIMG20260706_090820376.JPG",x:14.2,y:53.1,ax:16.5,ay:52.9,floor:"1階",name:"西社員駐車場",items:[]},
-{no:23,file:"KIMG20260706_090837053.JPG",x:18.5,y:13.9,ax:29,ay:35.4,floor:"1階",name:"寮",items:[]},
+{no:23,file:"KIMG20260706_090837053.JPG",x:22.7,y:13.9,ax:29,ay:35.4,floor:"1階",name:"寮",items:[]},
 {no:24,file:"KIMG20260706_090841093.JPG",x:10.5,y:8.3,ax:20.9,ay:36.7,floor:"1階",name:"北入口",items:[]},
 {no:25,file:"KIMG20260706_090850511.JPG",x:52.9,y:13.9,ax:48.8,ay:38.5,floor:"1階",name:"北社員駐車場",items:[]},
 {no:26,file:"KIMG20260706_090911702.JPG",x:25.5,y:56.9,ax:26.4,ay:56.2,floor:"1階",name:"自宅駐車場",items:[]},
 {no:27,file:"KIMG20260706_090925556.JPG",x:27.9,y:44.4,ax:33.9,ay:58.9,floor:"1階",name:"自宅",items:[]},
 {no:28,file:"KIMG20260706_090951594.JPG",x:42.6,y:35.8,ax:51.4,ay:54.8,floor:"1階",name:"アームロール置き場",items:[]},
-{no:29,file:"KIMG20260706_091008543.JPG",x:63.3,y:51.4,ax:58.4,ay:62.9,floor:"1階",name:"シャッター庫（右車庫　左木材置き場）",items:[]},
+{no:29,file:"KIMG20260706_091008543.JPG",x:65.3,y:51.4,ax:58.4,ay:62.9,floor:"1階",name:"シャッター庫（右車庫　左木材置き場）",items:[]},
+{no:"29-1",file:"KIMG20260706_091008543.JPG",x:61.6,y:40.3,ax:58.4,ay:60.9,floor:"1階",name:"シャッター庫 1（上から1番目）",items:["白縄","杉皮","防草シート","防草シートの道具","ロープの予備"]},
+{no:"29-2",file:"KIMG20260706_091008543.JPG",x:61.6,y:45.8,ax:58.4,ay:61.9,floor:"1階",name:"シャッター庫 2（上から2番目）",items:[]},
+{no:"29-3",file:"KIMG20260706_091008543.JPG",x:61.6,y:51.4,ax:58.4,ay:62.9,floor:"1階",name:"シャッター庫 3（上から3番目）",items:[]},
+{no:"29-4",file:"KIMG20260706_091008543.JPG",x:61.6,y:56.9,ax:58.4,ay:63.9,floor:"1階",name:"シャッター庫 4（上から4番目）",items:[]},
+{no:"29-5",file:"KIMG20260706_091008543.JPG",x:61.6,y:62.5,ax:58.4,ay:64.9,floor:"1階",name:"シャッター庫 5（上から5番目）",items:[]},
 {no:30,file:"KIMG20260706_091021678.JPG",x:64.5,y:34,ax:63.8,ay:58.2,floor:"1階",name:"木材置き場",items:[]},
 {no:31,file:"KIMG20260706_091045560.JPG",x:45.3,y:47.9,ax:48.9,ay:64.5,floor:"1階",name:"下の事務所",items:[]},
 {no:32,file:"KIMG20260706_091123597.JPG",x:41.6,y:47.9,ax:43.8,ay:61.9,floor:"1階",name:"下の事務所中",items:[]},
-{no:33,file:"KIMG20260706_091345865.JPG",x:92.1,y:53.8,ax:80.9,ay:79.8,floor:"1階",name:"タンク",items:[]},
+{no:33,file:"KIMG20260706_091345865.JPG",x:92.1,y:53.8,ax:80.9,ay:79.8,floor:"1階",name:"雨水の貯水タンク",items:[]},
 {no:34,file:"KIMG20260706_092706989.JPG",x:47.8,y:73.2,ax:38.9,ay:69.3,floor:"1階",name:"メインボード",items:[]},
 {no:35,file:"KIMG20260706_092715908.JPG",x:35.4,y:73.2,ax:43.8,ay:72.2,floor:"1階",name:"後ろのボード",items:[]},
+{no:36,file:"",x:17.9,y:20.7,ax:24.5,ay:38.5,floor:"1階",name:"ゴミ置き場",items:[],memo:"寮の左下の角。寮の左（西）には4台ほど止められるスペースがある。"},
+{no:37,file:"",x:71.2,y:69.9,ax:61.5,ay:77,floor:"1階",name:"洗い場",items:[],memo:"トイレの下（南）にある。"},
 ];
 
 const mapInner = document.getElementById('mapInner');
@@ -563,7 +593,8 @@ function render(){
     if(!miss) shown++;
 
     const pin = document.createElement('div');
-    pin.className = 'pin' + (s.floor==='2階'?' f2':'') + (hit?' hit':'') + (miss?' dim':'');
+    const sub = String(s.no).length > 2 ? ' sub' : '';
+    pin.className = 'pin' + sub + (s.floor==='2階'?' f2':'') + (hit?' hit':'') + (miss?' dim':'');
     pin.style.left = (pm ? s.ax : s.x)+'%';
     pin.style.top  = (pm ? s.ay : s.y)+'%';
     pin.innerHTML = `<div class="dot">${s.no}</div><div class="lbl">${s.name}</div>`;
@@ -571,10 +602,10 @@ function render(){
     mapInner.appendChild(pin);
 
     const card = document.createElement('div');
-    card.className = 'card' + (s.floor==='2階'?' f2':'') + (hit?' hit':'') + (miss?' hidden':'');
+    card.className = 'card' + sub + (s.floor==='2階'?' f2':'') + (hit?' hit':'') + (miss?' hidden':'');
     card.innerHTML =
       `<div class="num">${s.no}</div>
-       <img class="thumb" src="写真/thumb/${s.file}" loading="lazy">
+       ${s.file ? `<img class="thumb" src="写真/thumb/${s.file}" loading="lazy">` : `<div class="nophoto">写真<br>まだ</div>`}
        <div><div class="nm">${s.name}</div><div class="fl">${s.floor}</div>${
          (s.items||[]).length ? `<div class="it">📦 ${s.items.map(esc).join('・')}</div>` : ''}</div>`;
     card.onclick = ()=>openViewer(idx);
@@ -618,7 +649,8 @@ function openViewer(idx){
 function applyViewer(){
   const s = SPOTS[curIdx];
   const img = document.getElementById('vImg');
-  img.src = '写真/'+s.file;
+  document.getElementById('viewer').classList.toggle('nophoto', !s.file);
+  if(s.file) img.src = '写真/'+s.file; else img.removeAttribute('src');
   img.className = 'vimg ' + vState;
   document.getElementById('vName').textContent = s.no+'. '+s.name+'（'+s.floor+'）';
   document.getElementById('vState').textContent = vState==='zoom' ? '拡大' : '全体';
