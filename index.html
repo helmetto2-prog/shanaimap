@@ -244,9 +244,14 @@
       <line x1="40" y1="0" x2="40" y2="720" stroke="#fff" stroke-width="2" stroke-dasharray="14 12"/>
       <text x="30" y="690" font-size="13" fill="#fff" writing-mode="tb" letter-spacing="4">道　路</text>
       <!-- 2026-11-15 東の道路（西の道路と同じアスファルトの道・地図の幅を 950→994 に広げた） -->
-      <rect x="938" y="0" width="44" height="720" fill="#a9aeae"/>
-      <line x1="960" y1="0" x2="960" y2="720" stroke="#fff" stroke-width="2" stroke-dasharray="14 12"/>
-      <text x="950" y="690" font-size="13" fill="#fff" writing-mode="tb" letter-spacing="4">道　路</text>
+      <polygon points="938,0 982,0 994,150 994,330 938,170" fill="#a9aeae"/>
+      <polyline points="960,0 960,150 994,245" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="14 12"/>
+      <rect x="936" y="236" width="30" height="96" fill="#e9e4da" stroke="#8d8676" stroke-width="1.2"/>
+      <text x="945" y="270" font-size="11" fill="#6d675a" writing-mode="tb" letter-spacing="3">家</text>
+      <polyline points="978,300 974,420 974,720" fill="none" stroke="#c9b98f" stroke-width="8"/>
+      <text x="970" y="470" font-size="10" fill="#7a6b3f" writing-mode="tb" letter-spacing="4">遊歩道</text>
+      
+      <text x="950" y="40" font-size="13" fill="#fff" writing-mode="tb" letter-spacing="4">道　路</text>
 
       <!-- ▼▼ 敷地（長方形） ▼▼ -->
       <rect x="70" y="30" width="860" height="660" fill="#f0f5e3" stroke="#5f8f4e" stroke-width="3" stroke-dasharray="10 6"/>
@@ -275,12 +280,12 @@
 
       <!-- 寮（車1台分ぶん右へ延長 w92→132・右辺242） -->
       <!-- 2026-11-15 寮の左（西）に4台ほどの駐車スペース・寮の左下の角にゴミ置き場（寮は右へ40） -->
-      <rect x="80" y="72" width="64" height="66" fill="#dfe6db" stroke="#9aa895" stroke-dasharray="6 4"/>
-      <g stroke="#b7c2b1" stroke-width="2"><line x1="84" y1="88" x2="140" y2="88"/><line x1="84" y1="105" x2="140" y2="105"/><line x1="84" y1="122" x2="140" y2="122"/></g>
-      <text x="92" y="100" font-size="9" fill="#5a6e5a">駐車4台</text>
-      <rect x="150" y="72" width="132" height="66" fill="#dcd4c0" stroke="#6d675a" stroke-width="1.5"/>
-      <rect x="150" y="140" width="40" height="18" fill="#c9c4b4" stroke="#6d675a" stroke-width="1.5"/>
-      <text x="153" y="153" font-size="8" fill="#4a4436">ゴミ置場</text>
+      <rect x="80" y="72" width="64" height="45" fill="#dfe6db" stroke="#9aa895" stroke-dasharray="6 4"/>
+      <g stroke="#b7c2b1" stroke-width="2"><line x1="84" y1="87" x2="140" y2="87"/><line x1="84" y1="102" x2="140" y2="102"/></g>
+      <text x="92" y="98" font-size="9" fill="#5a6e5a">駐車3台</text>
+      <rect x="150" y="55" width="132" height="83" fill="#dcd4c0" stroke="#6d675a" stroke-width="1.5"/>
+      <rect x="100" y="120" width="46" height="18" fill="#c9c4b4" stroke="#6d675a" stroke-width="1.5"/>
+      <text x="106" y="133" font-size="8" fill="#4a4436">ゴミ置場</text>
       <text x="208" y="110" font-size="14" fill="#4a4436">寮</text>
 
       <!-- 北社員駐車場（通り道の北・寮と会長畑の間いっぱいに拡張＝たくさん停める） -->
@@ -309,8 +314,8 @@
       <text x="768" y="201" font-size="8" fill="#7a735e">砂利道（狭い・車は通れない）</text>
 
 
-      <rect x="822" y="214" width="108" height="12" fill="#e3e8d2" stroke="#c5cdb0" stroke-width="1"/>
-      <text x="826" y="223" font-size="8" fill="#8a987a">細い道</text>
+
+
 
       <!-- 方位（N矢印を左へ30度傾け＝真北は上から左に30度） -->
       <g>
@@ -404,8 +409,8 @@
       </g>
       <text x="80" y="350" font-size="11" fill="#fff" font-weight="bold" writing-mode="tb" letter-spacing="6">生垣</text>
       <!-- 看板：道路ぎわ（生垣の南の端・正面入口のすぐ北）へ -->
-      <rect x="62" y="538" width="30" height="22" fill="#2e8b57" stroke="#fff" stroke-width="1.5"/>
-      <text x="65" y="553" font-size="11" fill="#fff" font-weight="bold">看板</text>
+      <rect x="42" y="550" width="28" height="22" fill="#2e8b57" stroke="#fff" stroke-width="1.5"/>
+      <text x="45" y="565" font-size="11" fill="#fff" font-weight="bold">看板</text>
 
       <!-- 農薬庫（北）／工具庫（南）：そのまま南へ駐車場1台分(40)移動 y440→480 -->
       <rect x="195" y="480" width="95" height="110" fill="#d8dcc8" stroke="#767d62" stroke-width="1.5"/>
@@ -476,8 +481,13 @@
       <text x="868" y="435" font-size="11" fill="#1e4d32" font-weight="bold" writing-mode="tb" letter-spacing="2">屋根駐車場（２階クレーン）</text>
 
       <!-- ◆ 右下：パッカー置き場 -->
-      <rect x="760" y="600" width="155" height="80" fill="#dfe6db" stroke="#9aa895" stroke-dasharray="6 4"/>
-      <text x="778" y="644" font-size="12" fill="#5a6e5a">パッカー置き場</text>
+      <rect x="760" y="600" width="155" height="48" fill="#dfe6db" stroke="#9aa895" stroke-dasharray="6 4"/>
+      <!-- 2026-11-15 パッカー置き場の南：脚立置き場（新しく作った所）・産廃置き場（ゴミ置き場） -->
+      <rect x="760" y="652" width="75" height="32" fill="#ccd4dc" stroke="#7d8694"/>
+      <text x="766" y="672" font-size="10" fill="#4a5260">脚立置き場</text>
+      <rect x="840" y="652" width="75" height="32" fill="#c9c4b4" stroke="#6d675a"/>
+      <text x="846" y="672" font-size="10" fill="#4a4436">産廃置き場</text>
+      <text x="778" y="629" font-size="12" fill="#5a6e5a">パッカー置き場</text>
 
       <!-- ◆ 左：正面入口（開口の上部を事務所の南辺560にそろえる／看板は西側駐車場へ移設済み） -->
       <rect x="70" y="560" width="8" height="60" fill="#f0f5e3"/>
@@ -529,7 +539,7 @@ const SPOTS = [
 {no:7,file:"KIMG20260706_090523053.JPG",x:92.1,y:66.7,ax:75.2,ay:82.9,floor:"1階",name:"タンク横屋根駐車場",items:[]},
 {no:8,file:"KIMG20260706_090544244.JPG",x:92.1,y:72.9,ax:78.6,ay:84.5,floor:"2階",name:"固定クレーン置き場",items:[]},
 {no:9,file:"KIMG20260706_090603282.JPG",x:76.3,y:91.2,ax:58.6,ay:90.7,floor:"1階",name:"脚立置き場",items:[]},
-{no:10,file:"KIMG20260706_090611567.JPG",x:88.2,y:88.9,ax:68.8,ay:93.9,floor:"1階",name:"パッカー置き場",items:[]},
+{no:10,file:"KIMG20260706_090611567.JPG",x:88.2,y:86.6,ax:68.8,ay:93.9,floor:"1階",name:"パッカー置き場",items:[]},
 {no:11,file:"KIMG20260706_090627529.JPG",x:61.7,y:72.9,ax:59.6,ay:80.1,floor:"1階",name:"更衣室",items:[]},
 {no:12,file:"KIMG20260706_090640241.JPG",x:66.3,y:72.9,ax:58.4,ay:78,floor:"1階",name:"男子更衣室",items:[]},
 {no:13,file:"KIMG20260706_090644711.JPG",x:66.3,y:87.2,ax:53.7,ay:85.8,floor:"1階",name:"フートン置き場",items:[]},
@@ -560,8 +570,10 @@ const SPOTS = [
 {no:33,file:"KIMG20260706_091345865.JPG",x:92.1,y:53.8,ax:80.9,ay:79.8,floor:"1階",name:"雨水の貯水タンク",items:[]},
 {no:34,file:"KIMG20260706_092706989.JPG",x:44.2,y:75.6,ax:38.9,ay:69.3,floor:"1階",name:"メインボード",items:[]},
 {no:35,file:"KIMG20260706_092715908.JPG",x:35.4,y:73.2,ax:43.8,ay:72.2,floor:"1階",name:"後ろのボード",items:[]},
+{no:39,file:"",x:83.9,y:92.8,ax:66,ay:96,floor:"1階",name:"脚立置き場（パッカー置き場の南）",items:["脚立"],memo:"パッカー置き場の南側に新しく作った脚立置き場。"},
+{no:40,file:"",x:92.3,y:92.8,ax:71,ay:96,floor:"1階",name:"産廃置き場（ゴミ置き場）",items:[],memo:"パッカー置き場の南側。"},
 {no:38,file:"",x:44.2,y:69.4,ax:40.6,ay:69.6,floor:"1階",name:"自動販売機",items:["自動販売機"],memo:"詰所（1階）の東側。すぐ右に車が1台止められるスペースがある。"},
-{no:36,file:"",x:17.9,y:20.7,ax:24.5,ay:38.5,floor:"1階",name:"ゴミ置き場",items:[],memo:"寮の左下の角。寮の左（西）には4台ほど止められるスペースがある。"},
+{no:36,file:"",x:12.9,y:17.9,ax:24.5,ay:38.5,floor:"1階",name:"ゴミ置き場",items:[],memo:"寮の左下の角の左側。寮の左（西）には3台ほど止められるスペースがある。"},
 {no:37,file:"",x:71.2,y:69.9,ax:61.5,ay:77,floor:"1階",name:"洗い場",items:[],memo:"トイレの下（南）にある。"},
 ];
 
