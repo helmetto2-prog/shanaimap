@@ -164,6 +164,18 @@
   .map-wrap.zoomed .map-inner { flex:none; max-width:none; }
   .zoomlv { font-size:11px; opacity:.8; }
 
+  /* ===== 検索の結果（検索の欄のすぐ下） ===== */
+  .hits { display:none; position:fixed; top:52px; right:8px; z-index:61; width:320px; max-width:calc(100vw - 16px);
+    max-height:62vh; overflow:auto; background:#fff; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,.25); padding:6px; }
+  .hits.show { display:block; }
+  .hits .hhd { font-size:12px; color:#2e5d34; font-weight:bold; padding:4px 6px; }
+  .hits .hno { font-size:13px; color:#7a8f7a; padding:6px; }
+  .hits .hrow { display:flex; align-items:center; gap:9px; padding:9px 6px; border-top:1px solid #eceee6; cursor:pointer; }
+  .hits .hn { flex:none; min-width:30px; height:26px; padding:0 6px; border-radius:13px; background:#c8a24a; color:#fff;
+    font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; }
+  .hits b { font-size:15px; display:block; }
+  .hits small { font-size:12px; color:#8a6a1a; display:block; margin-top:1px; }
+
   /* ===== スマホを縦に持った時：上の帯を重ねずに並べる ===== */
   @media (orientation:portrait) and (max-width:700px) {
     .titlebar, .toolbar, .legend { position:static; }
@@ -171,6 +183,7 @@
     .titlebar .sub { display:block; margin-top:1px; }
     .toolbar { margin:8px 8px 0; max-width:none; justify-content:flex-start; }
     .toolbar input[type="text"] { flex:1 1 100%; width:auto; }
+    .hits { position:static; width:auto; max-width:none; margin:8px 8px 0; max-height:46vh; }
     .map-wrap { min-height:0; padding:8px 4px; display:block; }
     .map-wrap.zoomed { height:auto; max-height:72vh; max-height:72dvh; }
     .legend { margin:0 8px; display:inline-flex; }
@@ -193,7 +206,7 @@
     @page { size: A4 portrait; margin: 10mm; }
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     body { background:#fff; overflow:visible; }
-    .toolbar, .titlebar, .legend, .viewer { display:none !important; }
+    .toolbar, .titlebar, .legend, .viewer, .hits { display:none !important; }
     .map-wrap { min-height:auto; page-break-after:always; }
     .map-inner { max-width:100%; }
     body .pin .lbl { display:block !important; }
@@ -220,6 +233,8 @@
   <div class="modebtn" onclick="zoomMap(-1)">− 小さく <span class="zoomlv" id="zoomLv"></span></div>
   <div class="modebtn" onclick="window.print()">🖨️</div>
 </div>
+
+<div class="hits" id="hits"></div>
 
 <div class="legend">
   <span><i class="r"></i>1階・屋外</span>
@@ -414,9 +429,12 @@
 
       <!-- 農薬庫（北）／工具庫（南）：そのまま南へ駐車場1台分(40)移動 y440→480 -->
       <rect x="195" y="480" width="95" height="110" fill="#d8dcc8" stroke="#767d62" stroke-width="1.5"/>
-      <line x1="195" y1="535" x2="290" y2="535" stroke="#767d62" stroke-width="1.5"/>
-      <text x="216" y="512" font-size="12" fill="#4c5238">農薬庫</text>
-      <text x="216" y="568" font-size="12" fill="#4c5238">工具庫</text>
+      <!-- 2026-11-15 建物のほとんどが工具庫・右上4分の1が農薬庫／工具庫の右（東）に細い作業台（幅1mほど・コンプレッサー） -->
+      <rect x="243" y="480" width="47" height="55" fill="#ead9bd" stroke="#767d62" stroke-width="1.5"/>
+      <rect x="291" y="535" width="10" height="55" fill="#b98f5a" stroke="#7a5230" stroke-width="1"/>
+      <text x="304" y="548" font-size="8" fill="#7a5230" writing-mode="tb" letter-spacing="1">作業台</text>
+      <text x="247" y="511" font-size="11" fill="#4c5238">農薬庫</text>
+      <text x="204" y="552" font-size="12" fill="#4c5238">工具庫</text>
 
       <!-- ★ 事務所（木造2階・入口は東側の階段） -->
       <rect x="330" y="440" width="130" height="120" fill="#cdeade" stroke="#2c3e36" stroke-width="2.5"/>
@@ -548,8 +566,8 @@ const SPOTS = [
 {no:16,file:"KIMG20260706_090714301.JPG",x:52.6,y:91.7,ax:43.4,ay:82.6,floor:"1階",name:"第二更衣室中",items:[]},
 {no:17,file:"KIMG20260706_090726994.JPG",x:40.6,y:73.4,ax:42.2,ay:72.1,floor:"1階",name:"２Ｆ事務所　１Ｆ詰所",items:[]},
 {no:18,file:"KIMG20260706_090737584.JPG",x:38.9,y:69.4,ax:40.9,ay:70.7,floor:"1階",name:"詰所",items:[]},
-{no:19,file:"KIMG20260706_090748356.JPG",x:25.6,y:70.4,ax:34.7,ay:71.9,floor:"1階",name:"農薬庫（北側）",items:[]},
-{no:20,file:"KIMG20260706_090756607.JPG",x:25.6,y:78.1,ax:29.7,ay:71.8,floor:"1階",name:"工具庫（南側）",items:[]},
+{no:19,file:"KIMG20260706_090748356.JPG",x:28.0,y:70.4,ax:34.7,ay:71.9,floor:"1階",name:"農薬庫",items:[]},
+{no:20,file:"KIMG20260706_090756607.JPG",x:23.8,y:78.4,ax:29.7,ay:71.8,floor:"1階",name:"工具庫",items:[]},
 {no:21,file:"KIMG20260706_090816413.JPG",x:10,y:88.2,ax:10,ay:60.7,floor:"1階",name:"看板",items:[]},
 {no:22,file:"KIMG20260706_090820376.JPG",x:14.2,y:53.1,ax:16.5,ay:52.9,floor:"1階",name:"西社員駐車場",items:[]},
 {no:23,file:"KIMG20260706_090837053.JPG",x:22.7,y:13.9,ax:29,ay:35.4,floor:"1階",name:"寮",items:[]},
@@ -559,17 +577,18 @@ const SPOTS = [
 {no:27,file:"KIMG20260706_090925556.JPG",x:27.9,y:44.4,ax:33.9,ay:58.9,floor:"1階",name:"自宅",items:[]},
 {no:28,file:"KIMG20260706_090951594.JPG",x:42.6,y:35.8,ax:51.4,ay:54.8,floor:"1階",name:"アームロール置き場",items:[]},
 {no:29,file:"KIMG20260706_091008543.JPG",x:65.3,y:51.4,ax:58.4,ay:62.9,floor:"1階",name:"シャッター庫（右車庫　左木材置き場）",items:[]},
-{no:"29-1",file:"KIMG20260706_091008543.JPG",x:61.6,y:40.3,ax:58.4,ay:60.9,floor:"1階",name:"シャッター庫 1（上から1番目）",items:["白縄","杉皮","防草シート","防草シートの道具","ロープの予備"]},
-{no:"29-2",file:"KIMG20260706_091008543.JPG",x:61.6,y:45.8,ax:58.4,ay:61.9,floor:"1階",name:"シャッター庫 2（上から2番目）",items:[]},
-{no:"29-3",file:"KIMG20260706_091008543.JPG",x:61.6,y:51.4,ax:58.4,ay:62.9,floor:"1階",name:"シャッター庫 3（上から3番目）",items:[]},
-{no:"29-4",file:"KIMG20260706_091008543.JPG",x:61.6,y:56.9,ax:58.4,ay:63.9,floor:"1階",name:"シャッター庫 4（上から4番目）",items:[]},
-{no:"29-5",file:"KIMG20260706_091008543.JPG",x:61.6,y:62.5,ax:58.4,ay:64.9,floor:"1階",name:"シャッター庫 5（上から5番目）",items:[]},
+{no:"29-1",file:"KIMG20260706_091008543.JPG",x:61.6,y:40.3,ax:58.4,ay:60.9,floor:"1階",name:"シャッター庫 1",items:["白縄","杉皮","防草シート","防草シートの道具","ロープの予備"]},
+{no:"29-2",file:"KIMG20260706_091008543.JPG",x:61.6,y:45.8,ax:58.4,ay:61.9,floor:"1階",name:"シャッター庫 2",items:[]},
+{no:"29-3",file:"KIMG20260706_091008543.JPG",x:61.6,y:51.4,ax:58.4,ay:62.9,floor:"1階",name:"シャッター庫 3",items:[]},
+{no:"29-4",file:"KIMG20260706_091008543.JPG",x:61.6,y:56.9,ax:58.4,ay:63.9,floor:"1階",name:"シャッター庫 4",items:[]},
+{no:"29-5",file:"KIMG20260706_091008543.JPG",x:61.6,y:62.5,ax:58.4,ay:64.9,floor:"1階",name:"シャッター庫 5",items:[]},
 {no:30,file:"KIMG20260706_091021678.JPG",x:64.5,y:34,ax:63.8,ay:58.2,floor:"1階",name:"木材置き場",items:[]},
 {no:31,file:"KIMG20260706_091045560.JPG",x:45.3,y:47.9,ax:48.9,ay:64.5,floor:"1階",name:"下の事務所",items:[]},
 {no:32,file:"KIMG20260706_091123597.JPG",x:41.6,y:47.9,ax:43.8,ay:61.9,floor:"1階",name:"下の事務所中",items:[]},
 {no:33,file:"KIMG20260706_091345865.JPG",x:92.1,y:53.8,ax:80.9,ay:79.8,floor:"1階",name:"雨水の貯水タンク",items:[]},
 {no:34,file:"KIMG20260706_092706989.JPG",x:44.2,y:75.6,ax:38.9,ay:69.3,floor:"1階",name:"メインボード",items:[]},
 {no:35,file:"KIMG20260706_092715908.JPG",x:35.4,y:73.2,ax:43.8,ay:72.2,floor:"1階",name:"後ろのボード",items:[]},
+{no:41,file:"",x:31.2,y:78.1,ax:31.5,ay:73,floor:"1階",name:"作業台（工具庫の右）",items:["コンプレッサー"],memo:"工具庫の右側にある幅1メートルほどの細い作業台。"},
 {no:39,file:"",x:83.9,y:92.8,ax:66,ay:96,floor:"1階",name:"脚立置き場（パッカー置き場の南）",items:["脚立"],memo:"パッカー置き場の南側に新しく作った脚立置き場。"},
 {no:40,file:"",x:92.3,y:92.8,ax:71,ay:96,floor:"1階",name:"産廃置き場（ゴミ置き場）",items:[],memo:"パッカー置き場の南側。"},
 {no:38,file:"",x:44.2,y:69.4,ax:40.6,ay:69.6,floor:"1階",name:"自動販売機",items:["自動販売機"],memo:"詰所（1階）の東側。すぐ右に車が1台止められるスペースがある。"},
@@ -583,7 +602,32 @@ const cards = document.getElementById('cards');
 let curIdx = null;
 let vState = 'zoom';   // 'zoom'(拡大) → 'fit'(全体) → 閉じる
 
-function isHit(s, q){ return q && (s.name.includes(q) || (s.items||[]).some(i=>i.includes(q)) || (s.memo||'').includes(q)); }
+/* 検索：ひらがな・カタカナ・全角半角・大文字小文字・空白のちがいを気にせず当てる（「しろなわ」は当たらない＝漢字の読みまでは見ない） */
+function norm(t){
+  return String(t||'').normalize('NFKC').toLowerCase().replace(/[\s　・\-‐ー−]/g,'')
+    .replace(/[ァ-ヶ]/g, c=>String.fromCharCode(c.charCodeAt(0)-0x60));
+}
+function hitItems(s, q){ const n=norm(q); return n ? (s.items||[]).filter(i=>norm(i).includes(n)) : []; }
+function isHit(s, q){
+  const n = norm(q); if(!n) return false;
+  return norm(s.name).includes(n) || norm(s.no).includes(n) || hitItems(s,q).length>0 || norm(s.memo).includes(n);
+}
+/* 検索の結果を、検索の欄のすぐ下に並べる（押すとその場所が開く） */
+function showHits(q){
+  const box = document.getElementById('hits');
+  if(!norm(q)){ box.classList.remove('show'); box.innerHTML=''; return; }
+  const rows = [];
+  SPOTS.forEach((s,idx)=>{ if(isHit(s,q)) rows.push({s,idx}); });
+  let h = '<div class="hhd">「'+esc(q)+'」＝ '+rows.length+'か所</div>';
+  if(!rows.length) h += '<div class="hno">見つかりませんでした。まだ書いていない物かもしれません。</div>';
+  rows.slice(0,20).forEach(r=>{
+    const it = hitItems(r.s,q);
+    h += '<div class="hrow" data-i="'+r.idx+'"><span class="hn">'+esc(r.s.no)+'</span><span><b>'+esc(r.s.name)+'</b>'
+      + (it.length ? '<small>📦 '+it.map(esc).join('・')+'</small>' : '') + '</span></div>';
+  });
+  box.innerHTML = h; box.classList.add('show');
+  box.querySelectorAll('.hrow').forEach(e=>{ e.onclick = ()=>openViewer(+e.getAttribute('data-i')); });
+}
 function esc(t){ return String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 /* ===== 地図を広げる・戻す（番号が重なる所を押しやすく） ===== */
@@ -642,6 +686,7 @@ function render(){
     cards.appendChild(card);
   });
   document.getElementById('cnt').textContent = q ? shown+'/'+SPOTS.length : SPOTS.length;
+  showHits(q);
   spreadPins();
 }
 
