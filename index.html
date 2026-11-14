@@ -131,8 +131,9 @@
 
   /* ===== タッチ端末（スマホ・タブレット）：ピンとボタンを押しやすい大きさに ===== */
   @media (pointer:coarse) {
-    .pin .dot { width:32px; height:32px; font-size:15px; }
-    .pin .lbl { font-size:11px; max-width:130px; padding:2px 6px; }
+    /* 2026-11-15 番号を半分の大きさに（32px→16px）。重なる所は「＋ 大きく」で地図を広げて押す */
+    .pin .dot { width:16px; height:16px; font-size:9px; border-width:1.5px; }
+    .pin .lbl { font-size:9px; max-width:96px; padding:1px 4px; }
     .toolbar input[type="text"] { width:170px; padding:11px 14px; font-size:16px; }
     .modebtn { font-size:14px; padding:11px 14px; }
     .titlebar { font-size:14px; padding:9px 14px; }
@@ -145,6 +146,36 @@
     .card { padding:12px; }
     .card .num { width:30px; height:30px; font-size:13px; }
   }
+
+  /* ===== 地図を広げた時（＋ 大きく）：横にも縦にも指で動かせる ===== */
+  .map-wrap.zoomed { justify-content:flex-start; align-items:flex-start; overflow:auto;
+    height:100vh; height:100dvh; -webkit-overflow-scrolling:touch; }
+  .map-wrap.zoomed .map-inner { flex:none; max-width:none; }
+  .zoomlv { font-size:11px; opacity:.8; }
+
+  /* ===== スマホを縦に持った時：上の帯を重ねずに並べる ===== */
+  @media (orientation:portrait) and (max-width:700px) {
+    .titlebar, .toolbar, .legend { position:static; }
+    .titlebar { margin:8px 8px 0; border-radius:12px; background:rgba(46,93,52,.9); max-width:none; }
+    .titlebar .sub { display:block; margin-top:1px; }
+    .toolbar { margin:8px 8px 0; max-width:none; justify-content:flex-start; }
+    .toolbar input[type="text"] { flex:1 1 100%; width:auto; }
+    .map-wrap { min-height:0; padding:8px 4px; display:block; }
+    .map-wrap.zoomed { height:auto; max-height:72vh; max-height:72dvh; }
+    .legend { margin:0 8px; display:inline-flex; }
+  }
+
+  /* ===== 写真の下に出す「ここにある物・特徴」 ===== */
+  .vinfo { position:absolute; left:0; right:0; bottom:0; z-index:2; color:#fff;
+    background:linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.78) 26%); padding:26px 14px 12px;
+    max-height:46%; overflow:auto; }
+  .vinfo h4 { font-size:12px; font-weight:bold; color:#f0d58a; margin:6px 0 4px; }
+  .vinfo ul { list-style:none; display:flex; flex-wrap:wrap; gap:6px; }
+  .vinfo li { font-size:14px; background:rgba(255,255,255,.2); padding:4px 10px; border-radius:12px; }
+  .vinfo p { font-size:14px; line-height:1.5; }
+  .vinfo .none { font-size:12px; opacity:.75; }
+  .vinfo .vhint { position:static; text-align:right; margin-top:8px; }
+  .card .it { font-size:11px; color:#8a6a1a; margin-top:2px; }
 
   /* ===== A4印刷（縦）：1枚目=平面図、2枚目以降=場所一覧 ===== */
   @media print {
@@ -174,6 +205,8 @@
   <input type="text" id="q" placeholder="🔍 場所を検索">
   <div class="modebtn" id="bgBtn" onclick="toggleBg()">📷 航空写真</div>
   <div class="modebtn on" id="lblBtn" onclick="toggleLbl()">🏷️ 名前</div>
+  <div class="modebtn" onclick="zoomMap(1)">＋ 大きく</div>
+  <div class="modebtn" onclick="zoomMap(-1)">− 小さく <span class="zoomlv" id="zoomLv"></span></div>
   <div class="modebtn" onclick="window.print()">🖨️</div>
 </div>
 
@@ -183,7 +216,7 @@
   <span><i class="g"></i>ヒット</span>
 </div>
 
-<div class="map-wrap">
+<div class="map-wrap" id="mapWrap">
   <div class="map-inner" id="mapInner">
     <!-- ======== すっきり長方形の配置図 ======== -->
     <svg viewBox="0 0 950 720" xmlns="http://www.w3.org/2000/svg" font-family="'Yu Gothic UI','Hiragino Sans',Meiryo,sans-serif">
@@ -421,18 +454,23 @@
   </div>
   <button class="vnav prev" onclick="event.stopPropagation();navViewer(-1)">‹</button>
   <button class="vnav next" onclick="event.stopPropagation();navViewer(1)">›</button>
-  <div class="vhint" id="vHint"></div>
+  <div class="vinfo" id="vInfo" onclick="event.stopPropagation()">
+    <div id="vInfoBody"></div>
+    <div class="vhint" id="vHint"></div>
+  </div>
 </div>
 
 <script>
 /* ===== 場所データ =====
    x,y   … 平面図（長方形レイアウト）でのピン位置％
-   ax,ay … 航空写真でのピン位置％（切替時に使用） */
+   ax,ay … 航空写真でのピン位置％（切替時に使用）
+   items … そこに置いてある物（いくつでも）　例 items:["脚立6段","脚立8段"]
+   memo  … その場所の特徴（1〜2文）　　　　　例 memo:"雨の日はここで作業" */
 const SPOTS = [
 {no:1,file:"KIMG20260706_090414606.JPG",x:79.9,y:41.5,ax:66.4,ay:72.1,floor:"1階",name:"北側屋根付き駐車場",items:[]},
 {no:2,file:"KIMG20260706_090427029.JPG",x:84.2,y:41.5,ax:74.5,ay:72.9,floor:"1階",name:"ハンマー置き場",items:[]},
 {no:3,file:"KIMG20260706_090433283.JPG",x:93.9,y:37.8,ax:81.3,ay:74.2,floor:"1階",name:"佐野さん作業場",items:[]},
-{no:4,file:"KIMG20260706_090442900.JPG",x:94.7,y:41.7,ax:82.9,ay:74.3,floor:"1階",name:"佐野さん作業場中",items:[]},
+{no:4,file:"KIMG20260706_090442900.JPG",x:94.7,y:41.7,ax:82.9,ay:74.3,floor:"1階",name:"佐野さん作業場中",items:["インターロッキング（舗装ブロック）"]},
 {no:5,file:"KIMG20260706_090453982.JPG",x:91.6,y:13.9,ax:90.3,ay:66.2,floor:"1階",name:"会長畑",items:[]},
 {no:6,file:"KIMG20260706_090504773.JPG",x:83.7,y:15.3,ax:86.1,ay:65.5,floor:"1階",name:"会長畑２",items:[]},
 {no:7,file:"KIMG20260706_090523053.JPG",x:92.1,y:66.7,ax:75.2,ay:82.9,floor:"1階",name:"タンク横屋根駐車場",items:[]},
@@ -471,7 +509,32 @@ const cards = document.getElementById('cards');
 let curIdx = null;
 let vState = 'zoom';   // 'zoom'(拡大) → 'fit'(全体) → 閉じる
 
-function isHit(s, q){ return q && (s.name.includes(q) || (s.items||[]).some(i=>i.includes(q))); }
+function isHit(s, q){ return q && (s.name.includes(q) || (s.items||[]).some(i=>i.includes(q)) || (s.memo||'').includes(q)); }
+function esc(t){ return String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ===== 地図を広げる・戻す（番号が重なる所を押しやすく） ===== */
+const ZOOMS = [1, 1.6, 2.4, 3.2];
+let zoomIdx = 0;
+function zoomMap(d){
+  const wrap = document.getElementById('mapWrap');
+  const before = ZOOMS[zoomIdx];
+  const cx = (wrap.scrollLeft + wrap.clientWidth/2) / (wrap.scrollWidth||1);
+  const cy = (wrap.scrollTop + wrap.clientHeight/2) / (wrap.scrollHeight||1);
+  zoomIdx = Math.max(0, Math.min(ZOOMS.length-1, zoomIdx + d));
+  const z = ZOOMS[zoomIdx];
+  if(z === before) return;
+  if(z === 1){
+    wrap.classList.remove('zoomed'); mapInner.style.width = '';
+  } else {
+    const base = before === 1 ? mapInner.getBoundingClientRect().width : mapInner.getBoundingClientRect().width / before;
+    wrap.classList.add('zoomed'); mapInner.style.width = Math.round(base * z) + 'px';
+    const wasFull = before === 1;
+    wrap.scrollLeft = (wasFull ? 0.5 : cx) * wrap.scrollWidth - wrap.clientWidth/2;
+    wrap.scrollTop  = (wasFull ? 0.5 : cy) * wrap.scrollHeight - wrap.clientHeight/2;
+  }
+  document.getElementById('zoomLv').textContent = z === 1 ? '' : '×'+z;
+  render();
+}
 function photoMode(){ return document.body.classList.contains('photo'); }
 
 function render(){
@@ -498,12 +561,38 @@ function render(){
     card.innerHTML =
       `<div class="num">${s.no}</div>
        <img class="thumb" src="写真/thumb/${s.file}" loading="lazy">
-       <div><div class="nm">${s.name}</div><div class="fl">${s.floor}</div></div>`;
+       <div><div class="nm">${s.name}</div><div class="fl">${s.floor}</div>${
+         (s.items||[]).length ? `<div class="it">📦 ${s.items.map(esc).join('・')}</div>` : ''}</div>`;
     card.onclick = ()=>openViewer(idx);
     cards.appendChild(card);
   });
   document.getElementById('cnt').textContent = q ? shown+'/'+SPOTS.length : SPOTS.length;
+  spreadPins();
 }
+
+/* ===== スマホだけ：重なった番号を少しだけ離して、どれも押せるようにする（パソコンは元の位置のまま） ===== */
+const COARSE = window.matchMedia('(pointer:coarse)').matches || /[?&]coarse=1/.test(location.search);
+function spreadPins(){
+  if(!COARSE) return;
+  const W = mapInner.clientWidth, H = mapInner.clientHeight;
+  if(!W || !H) return;
+  const pm = photoMode(), D = 18;   // 番号の丸 16px ＋ すき間
+  const P = SPOTS.map(s=>({x:(pm?s.ax:s.x)/100*W, y:(pm?s.ay:s.y)/100*H}));
+  for(let n=0;n<12;n++){
+    for(let i=0;i<P.length;i++) for(let j=i+1;j<P.length;j++){
+      let dx=P[j].x-P[i].x, dy=P[j].y-P[i].y, d=Math.hypot(dx,dy);
+      if(d>=D) continue;
+      if(d<0.01){ dx=1; dy=0; d=1; }
+      const m=(D-d)/2;
+      P[i].x-=dx/d*m; P[i].y-=dy/d*m; P[j].x+=dx/d*m; P[j].y+=dy/d*m;
+    }
+  }
+  mapInner.querySelectorAll('.pin').forEach((p,i)=>{
+    p.style.left = Math.max(9,Math.min(W-9,P[i].x))+'px';
+    p.style.top  = Math.max(9,Math.min(H-9,P[i].y))+'px';
+  });
+}
+window.addEventListener('resize', ()=>spreadPins());
 
 /* ===== 写真ビューア（拡大→全体→閉じる） ===== */
 function openViewer(idx){
@@ -520,7 +609,13 @@ function applyViewer(){
   document.getElementById('vName').textContent = s.no+'. '+s.name+'（'+s.floor+'）';
   document.getElementById('vState').textContent = vState==='zoom' ? '拡大' : '全体';
   document.getElementById('vHint').textContent =
-    vState==='zoom' ? 'タップで全体表示 →' : 'もう一度タップで閉じる';
+    vState==='zoom' ? '写真をタップで全体表示 →' : '写真をもう一度タップで閉じる';
+  const items = s.items||[], memo = s.memo||'';
+  let h = '<h4>📦 ここにある物</h4>';
+  h += items.length ? '<ul>'+items.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>'
+                    : '<div class="none">まだ書いていません（分かったら水野まで）</div>';
+  if(memo) h += '<h4>📝 この場所の特徴</h4><p>'+esc(memo)+'</p>';
+  document.getElementById('vInfoBody').innerHTML = h;
 }
 function cycleViewer(){
   if(vState==='zoom'){ vState='fit'; applyViewer(); }
@@ -555,6 +650,11 @@ document.addEventListener('keydown', e=>{
   if(e.key==='ArrowLeft') navViewer(-1);
   if(e.key==='ArrowRight') navViewer(1);
 });
+/* スマホを縦に持った時は、名前の札を最初はしまっておく（番号が隠れるため・「🏷️ 名前」で出る） */
+if(window.matchMedia('(orientation:portrait) and (max-width:700px)').matches){
+  document.body.classList.remove('showlbl');
+  document.getElementById('lblBtn').classList.remove('on');
+}
 render();
 </script>
 </body>
