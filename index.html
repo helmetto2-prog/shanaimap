@@ -293,12 +293,13 @@
       <text x="330" y="50" font-size="13" fill="#5a6e5a">北社員駐車場（拡張）</text>
 
       <!-- ◆ 右上：会長畑 -->
+      <g transform="translate(0,24)"><!-- 2026-11-15 会長畑を下へ24＝下の通り道は狭い -->
       <rect x="760" y="45" width="155" height="120" fill="#cfe5b4" stroke="#7fa456" stroke-width="1.5"/>
       <g stroke="#9ec176" stroke-width="2.5">
         <line x1="770" y1="68" x2="905" y2="68"/><line x1="770" y1="90" x2="905" y2="90"/>
         <line x1="770" y1="112" x2="905" y2="112"/><line x1="770" y1="134" x2="905" y2="134"/>
       </g>
-      <text x="800" y="160" font-size="14" fill="#5b7a3a" font-weight="bold">会長畑</text>
+      <text x="800" y="160" font-size="14" fill="#5b7a3a" font-weight="bold">会長畑</text></g>
 
       <!-- 方位（N矢印を左へ30度傾け＝真北は上から左に30度） -->
       <g>
@@ -417,7 +418,11 @@
       <text x="490" y="512" font-size="10" fill="#c0392b">階段(東)</text>
       <!-- ボード -->
       <!-- メインボード：詰所の右側端へ -->
-      <rect x="450" y="512" width="8" height="30" fill="#7a5230"/>
+      <rect x="416" y="516" width="8" height="30" fill="#7a5230"/>
+      <!-- 2026-11-15 詰所（1階）の右4分の1＝車が1台止められる／その左上に自動販売機 -->
+      <rect x="428" y="502" width="30" height="56" fill="#dfe6db" stroke="#767d62" stroke-width="1.2" stroke-dasharray="5 3"/>
+      <text x="447" y="512" font-size="8" fill="#4c5238" writing-mode="tb" letter-spacing="1">車1台</text>
+      <rect x="415" y="502" width="10" height="12" fill="#d84a3a" stroke="#fff" stroke-width="1"/>
       <!-- 後ろのボード：90度右へ回して（縦向き）後ろ＝西端へ -->
       <rect x="332" y="512" width="8" height="30" fill="#7a5230"/>
 
@@ -508,8 +513,8 @@ const SPOTS = [
 {no:2,file:"KIMG20260706_090427029.JPG",x:84.2,y:41.5,ax:74.5,ay:72.9,floor:"1階",name:"ハンマー置き場",items:[]},
 {no:3,file:"KIMG20260706_090433283.JPG",x:93.9,y:37.8,ax:81.3,ay:74.2,floor:"1階",name:"佐野さん作業場",items:[]},
 {no:4,file:"KIMG20260706_090442900.JPG",x:94.7,y:41.7,ax:82.9,ay:74.3,floor:"1階",name:"佐野さん作業場中",items:["インターロッキング（舗装ブロック）"]},
-{no:5,file:"KIMG20260706_090453982.JPG",x:91.6,y:13.9,ax:90.3,ay:66.2,floor:"1階",name:"会長畑",items:[]},
-{no:6,file:"KIMG20260706_090504773.JPG",x:83.7,y:15.3,ax:86.1,ay:65.5,floor:"1階",name:"会長畑２",items:[]},
+{no:5,file:"KIMG20260706_090453982.JPG",x:91.6,y:17.2,ax:90.3,ay:66.2,floor:"1階",name:"会長畑",items:[]},
+{no:6,file:"KIMG20260706_090504773.JPG",x:83.7,y:18.6,ax:86.1,ay:65.5,floor:"1階",name:"会長畑２",items:[]},
 {no:7,file:"KIMG20260706_090523053.JPG",x:92.1,y:66.7,ax:75.2,ay:82.9,floor:"1階",name:"タンク横屋根駐車場",items:[]},
 {no:8,file:"KIMG20260706_090544244.JPG",x:92.1,y:72.9,ax:78.6,ay:84.5,floor:"2階",name:"固定クレーン置き場",items:[]},
 {no:9,file:"KIMG20260706_090603282.JPG",x:76.3,y:91.2,ax:58.6,ay:90.7,floor:"1階",name:"脚立置き場",items:[]},
@@ -520,7 +525,7 @@ const SPOTS = [
 {no:14,file:"KIMG20260706_090657124.JPG",x:66.3,y:92.6,ax:51.4,ay:88.2,floor:"1階",name:"くまで置き場",items:[]},
 {no:15,file:"KIMG20260706_090706023.JPG",x:54.5,y:89.6,ax:45.4,ay:81.6,floor:"1階",name:"第二更衣室",items:[]},
 {no:16,file:"KIMG20260706_090714301.JPG",x:52.6,y:91.7,ax:43.4,ay:82.6,floor:"1階",name:"第二更衣室中",items:[]},
-{no:17,file:"KIMG20260706_090726994.JPG",x:43.7,y:72.2,ax:42.2,ay:72.1,floor:"1階",name:"２Ｆ事務所　１Ｆ詰所",items:[]},
+{no:17,file:"KIMG20260706_090726994.JPG",x:40.6,y:73.4,ax:42.2,ay:72.1,floor:"1階",name:"２Ｆ事務所　１Ｆ詰所",items:[]},
 {no:18,file:"KIMG20260706_090737584.JPG",x:38.9,y:69.4,ax:40.9,ay:70.7,floor:"1階",name:"詰所",items:[]},
 {no:19,file:"KIMG20260706_090748356.JPG",x:25.6,y:70.4,ax:34.7,ay:71.9,floor:"1階",name:"農薬庫（北側）",items:[]},
 {no:20,file:"KIMG20260706_090756607.JPG",x:25.6,y:78.1,ax:29.7,ay:71.8,floor:"1階",name:"工具庫（南側）",items:[]},
@@ -542,8 +547,9 @@ const SPOTS = [
 {no:31,file:"KIMG20260706_091045560.JPG",x:45.3,y:47.9,ax:48.9,ay:64.5,floor:"1階",name:"下の事務所",items:[]},
 {no:32,file:"KIMG20260706_091123597.JPG",x:41.6,y:47.9,ax:43.8,ay:61.9,floor:"1階",name:"下の事務所中",items:[]},
 {no:33,file:"KIMG20260706_091345865.JPG",x:92.1,y:53.8,ax:80.9,ay:79.8,floor:"1階",name:"雨水の貯水タンク",items:[]},
-{no:34,file:"KIMG20260706_092706989.JPG",x:47.8,y:73.2,ax:38.9,ay:69.3,floor:"1階",name:"メインボード",items:[]},
+{no:34,file:"KIMG20260706_092706989.JPG",x:44.2,y:75.6,ax:38.9,ay:69.3,floor:"1階",name:"メインボード",items:[]},
 {no:35,file:"KIMG20260706_092715908.JPG",x:35.4,y:73.2,ax:43.8,ay:72.2,floor:"1階",name:"後ろのボード",items:[]},
+{no:38,file:"",x:44.2,y:69.4,ax:40.6,ay:69.6,floor:"1階",name:"自動販売機",items:["自動販売機"],memo:"詰所（1階）の東側。すぐ右に車が1台止められるスペースがある。"},
 {no:36,file:"",x:17.9,y:20.7,ax:24.5,ay:38.5,floor:"1階",name:"ゴミ置き場",items:[],memo:"寮の左下の角。寮の左（西）には4台ほど止められるスペースがある。"},
 {no:37,file:"",x:71.2,y:69.9,ax:61.5,ay:77,floor:"1階",name:"洗い場",items:[],memo:"トイレの下（南）にある。"},
 ];
