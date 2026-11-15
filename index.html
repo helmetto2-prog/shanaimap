@@ -611,7 +611,7 @@
     </select></label>
     <label>道具の名前<input type="text" id="mItem" maxlength="40" placeholder="例：しゅろなわ"></label>
     <label>ひとこと（書かなくてもよい）<textarea id="mText" maxlength="200"></textarea></label>
-    <label>書いた人<input type="text" id="mWho" maxlength="20" placeholder="名前"></label>
+    <label>書いた人（メモと一緒に名前が出ます）<input type="text" id="mWho" maxlength="20" placeholder="名前"></label>
     <div class="mmsg" id="mMsg"></div>
     <div class="mbtn"><button onclick="closeMemo()">やめる</button><button class="go" id="mGo" onclick="sendMemo()">送る</button></div>
   </div>
@@ -848,7 +848,7 @@ function applyViewer(){
                     : '<div class="none">まだ書いていません'+(MEMO_URL ? '（下の「メモを書く」で教えてください）' : '（分かったら水野まで）')+'</div>';
   if(memo) h += '<h4>📝 この場所の特徴</h4><p>'+esc(memo)+'</p>';
   if(mm.length) h += '<h4>🗒 みんなのメモ（まだ地図に入れる前）</h4>'
-    + mm.map(m=>'<div class="mm">'+esc(m.kind)+(m.item ? '：<b>'+esc(m.item)+'</b>' : '')+(m.text ? '　'+esc(m.text) : '')+'<small>'+esc(m.at||'')+'</small></div>').join('');
+    + mm.map(m=>'<div class="mm">'+esc(m.kind)+(m.item ? '：<b>'+esc(m.item)+'</b>' : '')+(m.text ? '　'+esc(m.text) : '')+'<small>'+esc(m.at||'')+(m.who ? '　'+esc(m.who) : '')+'</small></div>').join('');
   document.getElementById('vInfoBody').innerHTML = h;
   document.getElementById('vMemoBtn').style.display = MEMO_URL ? '' : 'none';
 }
