@@ -222,6 +222,20 @@
   .vmemo { margin-top:10px; width:100%; border:1px solid rgba(255,255,255,.5); background:rgba(255,255,255,.12); color:#fff;
     font-size:14px; padding:10px; border-radius:10px; cursor:pointer; }
 
+  /* ===== 地図のすぐ下の「メモ・要望」 ===== */
+  .yobo { padding:10px 12px 0; max-width:900px; margin:0 auto; }
+  .yobo h2 { font-size:14px; color:#2e5d34; margin:6px 2px 6px; }
+  .yobo .ybox { background:#fff; border:2px solid #c9d2c2; border-radius:10px; height:4.4em; padding:8px 12px; cursor:pointer;
+    font-size:15px; line-height:1.8; color:#a9b3a2;
+    background-image:linear-gradient(transparent calc(1.8em - 1px), #e3e8dd 1.8em); background-size:100% 1.8em; background-origin:content-box; }
+  .yobo .ybox:active { border-color:#2e5d34; }
+  .yobo .yrow { display:flex; gap:9px; align-items:flex-start; background:#fffbef; border:1px solid #ead9a6; border-radius:10px;
+    padding:8px 10px; margin-top:6px; cursor:pointer; font-size:14px; line-height:1.5; }
+  .yobo .yrow .hn { flex:none; min-width:30px; height:24px; padding:0 6px; border-radius:12px; background:#c8a24a; color:#fff;
+    font-size:12px; font-weight:bold; display:flex; align-items:center; justify-content:center; }
+  .yobo .yrow small { display:block; font-size:11px; color:#8a6a1a; }
+  @media print { .yobo { display:none !important; } }
+
   /* ===== みんなのメモ（道具がここにある・動かした など）を送る窓 ===== */
   .memo { display:none; position:fixed; inset:0; z-index:300; background:rgba(0,0,0,.6); align-items:flex-start; justify-content:center;
     overflow:auto; padding:14px 10px; }
@@ -259,7 +273,7 @@
 
 <!-- 透過タイトル（タップで最小化して完全に地図の邪魔を消せる） -->
 <div class="titlebar" id="titlebar" onclick="this.classList.toggle('min')">
-  🌲<span class="txt">みどり造園 社内マップ<span class="sub">　名前は仮です／良い呼び名は水野まで</span></span>
+  🌲<span class="txt">みどり造園 社内マップ</span>
 </div>
 
 <div class="toolbar">
@@ -573,6 +587,13 @@
   </div>
 </div>
 
+<!-- 地図のすぐ下：メモ・要望（空いた欄を押すと、メモを書く窓が開く・まだ地図に入れていないメモもここに並ぶ） -->
+<div class="yobo" id="yobo" style="display:none">
+  <h2>✏️ メモ・要望</h2>
+  <div class="ybox" onclick="openMemo(null)"><span>ここを押して書く（道具がある・動かした・買った・お願い など）</span></div>
+  <div id="yoboList"></div>
+</div>
+
 <div class="list">
   <h2>📋 場所一覧（<span id="cnt">35</span>か所）　タップで写真</h2>
   <div class="cards" id="cards"></div>
@@ -860,9 +881,21 @@ function applyViewer(){
 const MEMO_URL = 'https://script.google.com/macros/s/AKfycbztBcukGEipMlIGssWeZ-ijv3wBFAPNR0c9ZzV0QKQyJc5nb3mqsJDlN6Mtj6HERkcC/exec';
 let MEMOS = [];
 function memosOf(s){ return MEMOS.filter(m=>String(m.no)===String(s.no)); }
+/* 地図のすぐ下の「メモ・要望」に、まだ地図に入れていないメモを並べる（押すとその場所が開く） */
+function renderYobo(){
+  const box = document.getElementById('yobo'); if(!MEMO_URL){ box.style.display='none'; return; }
+  box.style.display = '';
+  document.getElementById('yoboList').innerHTML = MEMOS.map((m,i)=>{
+    const idx = SPOTS.findIndex(s=>String(s.no)===String(m.no)), sp = idx>=0 ? SPOTS[idx] : null;
+    return '<div class="yrow" data-i="'+idx+'"><span class="hn">'+esc(m.no)+'</span><span>'
+      + (sp ? '<b>'+esc(sp.name)+'</b>　' : '') + esc(m.kind) + (m.item ? '：<b>'+esc(m.item)+'</b>' : '') + (m.text ? '　'+esc(m.text) : '')
+      + '<small>'+esc(m.at||'')+(m.who ? '　'+esc(m.who) : '')+'</small></span></div>';
+  }).join('');
+  document.querySelectorAll('#yoboList .yrow').forEach(e=>{ const i=+e.getAttribute('data-i'); if(i>=0) e.onclick = ()=>openViewer(i); });
+}
 function loadMemos(){
   if(!MEMO_URL) return;
-  fetch(MEMO_URL+'?list=1').then(r=>r.json()).then(d=>{ MEMOS = (d && d.memos) || []; render(); if(curIdx!==null) applyViewer(); }).catch(()=>{});
+  fetch(MEMO_URL+'?list=1').then(r=>r.json()).then(d=>{ MEMOS = (d && d.memos) || []; render(); renderYobo(); if(curIdx!==null) applyViewer(); }).catch(()=>{});
 }
 function openMemo(idx){
   const sel = document.getElementById('mSpot');
@@ -892,6 +925,7 @@ function sendMemo(){
   }).catch(()=>{ go.disabled = false; msg.textContent = '送れませんでした。電波の良い所でもう一度お願いします。'; });
 }
 if(MEMO_URL){ document.getElementById('memoBtn').style.display = ''; }
+renderYobo();
 function cycleViewer(){
   if(vState==='zoom'){ vState='fit'; applyViewer(); }
   else { closeViewer(); }
