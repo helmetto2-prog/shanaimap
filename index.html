@@ -201,12 +201,49 @@
   .vinfo .vhint { position:static; text-align:right; margin-top:8px; }
   .card .it { font-size:11px; color:#8a6a1a; margin-top:2px; }
 
+  /* ===== 写真を「全体」にした時：空いた所に道具の一覧（横持ち＝右／縦持ち＝下） ===== */
+  .viewer.isfit img.vimg { width:62%; }
+  .viewer.isfit .vnone { right:38%; }
+  .viewer.isfit .vinfo { left:62%; top:0; bottom:0; max-height:none; background:rgba(18,28,20,.96); padding:58px 12px 12px; }
+  .viewer.isfit .vinfo ul { flex-direction:column; gap:5px; }
+  .viewer.isfit .vinfo li { font-size:15px; border-radius:8px; }
+  .viewer.isfit .vnav.next { right:calc(38% + 8px); }
+  @media (orientation:portrait) {
+    .viewer.isfit img.vimg { width:100%; height:46%; }
+    .viewer.isfit .vnone { right:0; bottom:54%; }
+    .viewer.isfit .vinfo { left:0; top:46%; padding-top:14px; }
+    .viewer.isfit .vnav { top:23%; }
+    .viewer.isfit .vnav.next { right:8px; }
+  }
+  .vinfo li small { font-size:11px; opacity:.7; margin-left:6px; }
+  .vinfo .mm { font-size:13px; line-height:1.5; background:rgba(240,213,138,.16); border-left:3px solid #f0d58a;
+    padding:5px 8px; border-radius:4px; margin-top:5px; }
+  .vinfo .mm small { display:block; font-size:10px; opacity:.7; }
+  .vmemo { margin-top:10px; width:100%; border:1px solid rgba(255,255,255,.5); background:rgba(255,255,255,.12); color:#fff;
+    font-size:14px; padding:10px; border-radius:10px; cursor:pointer; }
+
+  /* ===== みんなのメモ（道具がここにある・動かした など）を送る窓 ===== */
+  .memo { display:none; position:fixed; inset:0; z-index:300; background:rgba(0,0,0,.6); align-items:flex-start; justify-content:center;
+    overflow:auto; padding:14px 10px; }
+  .memo.show { display:flex; }
+  .memo .mbox { background:#fff; border-radius:14px; padding:14px; width:100%; max-width:420px; }
+  .memo h3 { font-size:16px; color:#2e5d34; margin-bottom:4px; }
+  .memo .mlead { font-size:12px; color:#7a8f7a; margin-bottom:8px; line-height:1.5; }
+  .memo label { display:block; font-size:12px; color:#2e5d34; font-weight:bold; margin-top:8px; }
+  .memo select, .memo input, .memo textarea { display:block; width:100%; margin-top:3px; font-size:16px; padding:9px;
+    border:1px solid #c9d2c2; border-radius:8px; background:#fff; font-family:inherit; }
+  .memo textarea { height:70px; }
+  .memo .mbtn { display:flex; gap:8px; margin-top:12px; }
+  .memo .mbtn button { flex:1; font-size:15px; padding:11px; border-radius:10px; border:1px solid #c9d2c2; background:#fff; cursor:pointer; }
+  .memo .mbtn .go { background:#2e5d34; color:#fff; border-color:#2e5d34; font-weight:bold; }
+  .memo .mmsg { font-size:13px; color:#b8532f; margin-top:8px; min-height:18px; }
+
   /* ===== A4印刷（縦）：1枚目=平面図、2枚目以降=場所一覧 ===== */
   @media print {
     @page { size: A4 portrait; margin: 10mm; }
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     body { background:#fff; overflow:visible; }
-    .toolbar, .titlebar, .legend, .viewer, .hits { display:none !important; }
+    .toolbar, .titlebar, .legend, .viewer, .hits, .memo { display:none !important; }
     .map-wrap { min-height:auto; page-break-after:always; }
     .map-inner { max-width:100%; }
     body .pin .lbl { display:block !important; }
@@ -226,11 +263,12 @@
 </div>
 
 <div class="toolbar">
-  <input type="text" id="q" placeholder="🔍 場所・道具を検索">
+  <input type="text" id="q" placeholder="🔍 ひらがなで検索（例：しろなわ）" autocomplete="off">
   <div class="modebtn" id="bgBtn" onclick="toggleBg()">📷 航空写真</div>
   <div class="modebtn on" id="lblBtn" onclick="toggleLbl()">🏷️ 名前</div>
   <div class="modebtn" onclick="zoomMap(1)">＋ 大きく</div>
   <div class="modebtn" onclick="zoomMap(-1)">− 小さく <span class="zoomlv" id="zoomLv"></span></div>
+  <div class="modebtn" id="memoBtn" style="display:none" onclick="openMemo(null)">✏️ メモ</div>
   <div class="modebtn" onclick="window.print()">🖨️</div>
 </div>
 
@@ -553,7 +591,29 @@
   <button class="vnav next" onclick="event.stopPropagation();navViewer(1)">›</button>
   <div class="vinfo" id="vInfo" onclick="event.stopPropagation()">
     <div id="vInfoBody"></div>
+    <button class="vmemo" id="vMemoBtn" style="display:none" onclick="openMemo(curIdx)">✏️ ここのメモを書く（道具がある・動かした など）</button>
     <div class="vhint" id="vHint"></div>
+  </div>
+</div>
+
+<!-- みんなのメモを送る窓（MEMO_URL が入っている時だけ使える） -->
+<div class="memo" id="memo" onclick="if(event.target===this)closeMemo()">
+  <div class="mbox">
+    <h3>✏️ メモを送る</h3>
+    <div class="mlead">道具の場所を教えてください。集まったメモを見て、地図に入れていきます。</div>
+    <label>場所<select id="mSpot"></select></label>
+    <label>どんな事<select id="mKind">
+      <option>ここにあります</option>
+      <option>ここへ動かしました</option>
+      <option>新しく買って ここに置きました</option>
+      <option>ここには もうありません</option>
+      <option>そのほか・お願い</option>
+    </select></label>
+    <label>道具の名前<input type="text" id="mItem" maxlength="40" placeholder="例：しろなわ"></label>
+    <label>ひとこと（書かなくてもよい）<textarea id="mText" maxlength="200"></textarea></label>
+    <label>書いた人<input type="text" id="mWho" maxlength="20" placeholder="名前"></label>
+    <div class="mmsg" id="mMsg"></div>
+    <div class="mbtn"><button onclick="closeMemo()">やめる</button><button class="go" id="mGo" onclick="sendMemo()">送る</button></div>
   </div>
 </div>
 
@@ -619,15 +679,47 @@ const cards = document.getElementById('cards');
 let curIdx = null;
 let vState = 'zoom';   // 'zoom'(拡大) → 'fit'(全体) → 閉じる
 
-/* 検索：ひらがな・カタカナ・全角半角・大文字小文字・空白のちがいを気にせず当てる（「しろなわ」は当たらない＝漢字の読みまでは見ない） */
+/* 検索：ひらがなで探す。ひらがな・カタカナ・全角半角・大文字小文字・空白のちがいは気にしない。
+   漢字は下の YOMI（漢字→ひらがな）で読みに直して当てる。新しい漢字の道具を足したら、ここにも読みを足す。
+   読みが2つある物は「/」で区切る（先頭がおもな読み）。 */
+const YOMI = {
+  /* 道具 */
+  "白縄":"しろなわ/しらなわ", "杉皮":"すぎかわ", "防草":"ぼうそう", "道具":"どうぐ", "予備":"よび", "肥料":"ひりょう",
+  "丸山":"まるやま", "1号":"いちごう/1ごう", "3号":"さんごう/3ごう", "結束":"けっそく", "工具箱":"こうぐばこ",
+  "箕":"み", "平くまで":"ひらくまで", "丸くまで":"まるくまで", "鉄":"てつ", "車載用":"しゃさいよう", "工事用":"こうじよう",
+  "車":"くるま", "後ろ":"うしろ", "付ける":"つける", "木づち":"きづち", "草刈り機":"くさかりき", "草刈":"くさかり",
+  "長トリマー":"ながとりまー", "電動":"でんどう", "脚立":"きゃたつ", "可変":"かへん", "段":"だん", "変えられる":"かえられる",
+  "自動販売機":"じどうはんばいき/じはんき", "箱":"はこ", "個":"こ", "佐野":"さの", "用":"よう",
+  /* 場所 */
+  "農薬庫":"のうやくこ", "農薬":"のうやく", "機械庫":"きかいこ", "機械":"きかい", "工具庫":"こうぐこ", "工具":"こうぐ",
+  "シャッター庫":"しゃったーこ", "右車庫":"みぎしゃこ", "車庫":"しゃこ", "左木材":"ひだりもくざい", "木材":"もくざい",
+  "北側":"きたがわ", "屋根付き":"やねつき", "屋根":"やね", "駐車場":"ちゅうしゃじょう", "置き場":"おきば",
+  "作業場":"さぎょうば", "作業台":"さぎょうだい", "会長畑":"かいちょうばたけ", "畑":"はたけ", "横":"よこ",
+  "固定":"こてい", "女性":"じょせい", "男子":"だんし", "第二":"だいに", "更衣室":"こういしつ", "事務所":"じむしょ",
+  "詰所":"つめしょ", "看板":"かんばん", "西社員":"にししゃいん", "北社員":"きたしゃいん", "社員":"しゃいん",
+  "寮":"りょう", "北入口":"きたいりぐち", "入口":"いりぐち", "自宅":"じたく", "下の":"したの", "中":"なか",
+  "雨水":"あまみず/うすい", "貯水":"ちょすい", "産廃":"さんぱい", "洗い場":"あらいば", "南":"みなみ", "右":"みぎ", "左":"ひだり"
+};
+const YKEYS = Object.keys(YOMI).sort((a,b)=>b.length-a.length);
 function norm(t){
-  return String(t||'').normalize('NFKC').toLowerCase().replace(/[\s　・\-‐ー−]/g,'')
+  return String(t||'').normalize('NFKC').toLowerCase().replace(/[\s　・\-‐ー−（）()、。]/g,'')
     .replace(/[ァ-ヶ]/g, c=>String.fromCharCode(c.charCodeAt(0)-0x60));
 }
-function hitItems(s, q){ const n=norm(q); return n ? (s.items||[]).filter(i=>norm(i).includes(n)) : []; }
+/* 字を読み（ひらがな）に直す。読みが2つある漢字は、2つ目の読みで直した物も返す */
+function yomi(t){
+  let a = String(t||''), b = a;
+  YKEYS.forEach(k=>{ if(a.indexOf(k)<0 && b.indexOf(k)<0) return;
+    const y = YOMI[k].split('/'); a = a.split(k).join(y[0]); b = b.split(k).join(y[y.length-1]); });
+  return a === b ? [a] : [a,b];
+}
+/* 探す時に見る字＝元の字＋読み */
+const _hay = {};
+function hay(t){ t = String(t||''); return _hay[t] || (_hay[t] = [t].concat(yomi(t)).map(norm).join('|')); }
+function hitItems(s, q){ const n=norm(q); return n ? (s.items||[]).filter(i=>hay(i).includes(n)) : []; }
+function hitMemos(s, q){ const n=norm(q); return n ? memosOf(s).filter(m=>hay(m.item+' '+m.text).includes(n)) : []; }
 function isHit(s, q){
   const n = norm(q); if(!n) return false;
-  return norm(s.name).includes(n) || norm(s.no).includes(n) || hitItems(s,q).length>0 || norm(s.memo).includes(n);
+  return hay(s.name).includes(n) || norm(s.no).includes(n) || hitItems(s,q).length>0 || hay(s.memo).includes(n) || hitMemos(s,q).length>0;
 }
 /* 検索の結果を、検索の欄のすぐ下に並べる（押すとその場所が開く） */
 function showHits(q){
@@ -638,9 +730,10 @@ function showHits(q){
   let h = '<div class="hhd">「'+esc(q)+'」＝ '+rows.length+'か所</div>';
   if(!rows.length) h += '<div class="hno">見つかりませんでした。まだ書いていない物かもしれません。</div>';
   rows.slice(0,20).forEach(r=>{
-    const it = hitItems(r.s,q);
+    const it = hitItems(r.s,q), mm = hitMemos(r.s,q);
     h += '<div class="hrow" data-i="'+r.idx+'"><span class="hn">'+esc(r.s.no)+'</span><span><b>'+esc(r.s.name)+'</b>'
-      + (it.length ? '<small>📦 '+it.map(esc).join('・')+'</small>' : '') + '</span></div>';
+      + (it.length ? '<small>📦 '+it.map(esc).join('・')+'</small>' : '')
+      + (mm.length ? '<small>🗒 メモ：'+mm.map(m=>esc(m.item||m.text)).join('・')+'</small>' : '') + '</span></div>';
   });
   box.innerHTML = h; box.classList.add('show');
   box.querySelectorAll('.hrow').forEach(e=>{ e.onclick = ()=>openViewer(+e.getAttribute('data-i')); });
@@ -748,13 +841,57 @@ function applyViewer(){
   document.getElementById('vState').textContent = vState==='zoom' ? '拡大' : '全体';
   document.getElementById('vHint').textContent =
     vState==='zoom' ? '写真をタップで全体表示 →' : '写真をもう一度タップで閉じる';
-  const items = s.items||[], memo = s.memo||'';
+  document.getElementById('viewer').classList.toggle('isfit', vState==='fit');
+  const items = s.items||[], memo = s.memo||'', mm = memosOf(s);
   let h = '<h4>📦 ここにある物</h4>';
-  h += items.length ? '<ul>'+items.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>'
-                    : '<div class="none">まだ書いていません（分かったら水野まで）</div>';
+  h += items.length ? '<ul>'+items.map(i=>{ const y = yomi(i)[0]; return '<li>'+esc(i)+(norm(y)!==norm(i) ? '<small>'+esc(y)+'</small>' : '')+'</li>'; }).join('')+'</ul>'
+                    : '<div class="none">まだ書いていません'+(MEMO_URL ? '（下の「メモを書く」で教えてください）' : '（分かったら水野まで）')+'</div>';
   if(memo) h += '<h4>📝 この場所の特徴</h4><p>'+esc(memo)+'</p>';
+  if(mm.length) h += '<h4>🗒 みんなのメモ（まだ地図に入れる前）</h4>'
+    + mm.map(m=>'<div class="mm">'+esc(m.kind)+(m.item ? '：<b>'+esc(m.item)+'</b>' : '')+(m.text ? '　'+esc(m.text) : '')+'<small>'+esc(m.at||'')+'</small></div>').join('');
   document.getElementById('vInfoBody').innerHTML = h;
+  document.getElementById('vMemoBtn').style.display = MEMO_URL ? '' : 'none';
 }
+
+/* ===== みんなのメモ =====
+   MEMO_URL＝メモをためる所（GAS のウェブアプリ）のアドレス。空の間は、メモのボタンも窓も出ない。
+   送ったメモはシートにたまり、へるめっとが見て SPOTS の items に入れる（入れたらシートに「済」）。
+   まだ入れていないメモは、その場所の写真の所に「みんなのメモ」として出て、検索にも当たる。 */
+const MEMO_URL = '';
+let MEMOS = [];
+function memosOf(s){ return MEMOS.filter(m=>String(m.no)===String(s.no)); }
+function loadMemos(){
+  if(!MEMO_URL) return;
+  fetch(MEMO_URL+'?list=1').then(r=>r.json()).then(d=>{ MEMOS = (d && d.memos) || []; render(); if(curIdx!==null) applyViewer(); }).catch(()=>{});
+}
+function openMemo(idx){
+  const sel = document.getElementById('mSpot');
+  if(!sel.options.length) sel.innerHTML = SPOTS.map(s=>'<option value="'+esc(s.no)+'">'+esc(s.no)+'. '+esc(s.name)+'</option>').join('');
+  if(idx!==null && idx!==undefined) sel.value = String(SPOTS[idx].no);
+  let who = ''; try{ who = localStorage.getItem('shanaimap-memo-who') || ''; }catch(e){}
+  document.getElementById('mWho').value = who;
+  document.getElementById('mItem').value = ''; document.getElementById('mText').value = '';
+  document.getElementById('mMsg').textContent = '';
+  document.getElementById('memo').classList.add('show');
+}
+function closeMemo(){ document.getElementById('memo').classList.remove('show'); }
+function sendMemo(){
+  const v = id=>document.getElementById(id).value.trim();
+  const msg = document.getElementById('mMsg'), go = document.getElementById('mGo');
+  const d = { no:v('mSpot'), kind:v('mKind'), item:v('mItem'), text:v('mText'), who:v('mWho') };
+  const sp = SPOTS.find(s=>String(s.no)===d.no); d.name = sp ? sp.name : '';
+  if(!d.item && !d.text){ msg.textContent = '道具の名前か、ひとことを書いてください。'; return; }
+  if(!d.who){ msg.textContent = '書いた人の名前を入れてください。'; return; }
+  try{ localStorage.setItem('shanaimap-memo-who', d.who); }catch(e){}
+  go.disabled = true; msg.textContent = '送っています…';
+  fetch(MEMO_URL, { method:'POST', body: JSON.stringify(d) }).then(r=>r.json()).then(r=>{
+    go.disabled = false;
+    if(!r || !r.ok){ msg.textContent = '送れませんでした。もう一度お願いします。'; return; }
+    msg.textContent = '';
+    closeMemo(); alert('送りました。ありがとうございます。'); loadMemos();
+  }).catch(()=>{ go.disabled = false; msg.textContent = '送れませんでした。電波の良い所でもう一度お願いします。'; });
+}
+if(MEMO_URL){ document.getElementById('memoBtn').style.display = ''; }
 function cycleViewer(){
   if(vState==='zoom'){ vState='fit'; applyViewer(); }
   else { closeViewer(); }
@@ -794,6 +931,7 @@ if(window.matchMedia('(orientation:portrait) and (max-width:700px)').matches){
   document.getElementById('lblBtn').classList.remove('on');
 }
 render();
+loadMemos();
 </script>
 </body>
 </html>
