@@ -857,7 +857,7 @@ function applyViewer(){
    MEMO_URL＝メモをためる所（GAS のウェブアプリ）のアドレス。空の間は、メモのボタンも窓も出ない。
    送ったメモはシートにたまり、へるめっとが見て SPOTS の items に入れる（入れたらシートに「済」）。
    まだ入れていないメモは、その場所の写真の所に「みんなのメモ」として出て、検索にも当たる。 */
-const MEMO_URL = '';
+const MEMO_URL = 'https://script.google.com/macros/s/AKfycbztBcukGEipMlIGssWeZ-ijv3wBFAPNR0c9ZzV0QKQyJc5nb3mqsJDlN6Mtj6HERkcC/exec';
 let MEMOS = [];
 function memosOf(s){ return MEMOS.filter(m=>String(m.no)===String(s.no)); }
 function loadMemos(){
