@@ -224,11 +224,20 @@
 
   /* ===== 地図のすぐ下の「メモ・要望」 ===== */
   .yobo { padding:10px 12px 0; max-width:900px; margin:0 auto; }
-  .yobo h2 { font-size:14px; color:#2e5d34; margin:6px 2px 6px; }
-  .yobo .ybox { background:#fff; border:2px solid #c9d2c2; border-radius:10px; height:4.4em; padding:8px 12px; cursor:pointer;
-    font-size:15px; line-height:1.8; color:#a9b3a2;
+  .yobo { background:#eef3e6; border:2px solid #2e5d34; border-radius:14px; padding:12px 12px 12px; margin:10px auto 0; width:calc(100% - 16px); }
+  .yobo h2 { font-size:19px; color:#2e5d34; margin:0 2px 6px; }
+  .yobo h2 small { font-size:12px; font-weight:normal; color:#5c6b5a; }
+  .yobo .yhow { font-size:13px; line-height:1.7; color:#3a4a3a; margin:0 2px 8px; }
+  .yobo .ybox { display:block; width:100%; background:#fff; border:2px solid #9fb09a; border-radius:10px; padding:8px 12px;
+    font-size:17px; line-height:1.8; color:#1e2a1e; font-family:inherit; resize:vertical; min-height:4.6em;
     background-image:linear-gradient(transparent calc(1.8em - 1px), #e3e8dd 1.8em); background-size:100% 1.8em; background-origin:content-box; }
-  .yobo .ybox:active { border-color:#2e5d34; }
+  .yobo .ybox:focus { border-color:#2e5d34; outline:none; }
+  .yobo .ybtn { display:flex; align-items:center; gap:10px; margin-top:8px; }
+  .yobo .ymsg { flex:1; font-size:13px; color:#b8532f; }
+  .yobo .ybtn button { flex:none; font-size:16px; font-weight:bold; padding:10px 28px; border-radius:10px; border:none; background:#2e5d34; color:#fff; cursor:pointer; }
+  .yobo .ybtn button:disabled { opacity:.5; }
+  .yobo .ysub { font-size:12px; color:#5c6b5a; margin:12px 2px 0; }
+  .yobo .yrow.mine { border-color:#2e5d34; background:#f3fbef; }
   .yobo .yrow { display:flex; gap:9px; align-items:flex-start; background:#fffbef; border:1px solid #ead9a6; border-radius:10px;
     padding:8px 10px; margin-top:6px; cursor:pointer; font-size:14px; line-height:1.5; }
   .yobo .yrow .hn { flex:none; min-width:30px; height:24px; padding:0 6px; border-radius:12px; background:#c8a24a; color:#fff;
@@ -282,7 +291,7 @@
   <div class="modebtn on" id="lblBtn" onclick="toggleLbl()">🏷️ 名前</div>
   <div class="modebtn" onclick="zoomMap(1)">＋ 大きく</div>
   <div class="modebtn" onclick="zoomMap(-1)">− 小さく <span class="zoomlv" id="zoomLv"></span></div>
-  <div class="modebtn" id="memoBtn" style="display:none" onclick="openMemo(null)">✏️ メモ</div>
+  <div class="modebtn" id="memoBtn" style="display:none" onclick="goYobo()">✏️ メモ</div>
   <div class="modebtn" onclick="window.print()">🖨️</div>
 </div>
 
@@ -591,8 +600,14 @@
 
 <!-- 地図のすぐ下：メモ・要望（空いた欄を押すと、メモを書く窓が開く・まだ地図に入れていないメモもここに並ぶ） -->
 <div class="yobo" id="yobo" style="display:none">
-  <h2>✏️ メモ・要望</h2>
-  <div class="ybox" onclick="openMemo(null)"><span>ここを押して書く（道具がある・動かした・買った・お願い など）</span></div>
+  <h2>✏️ メモ・要望　<small>道具の場所や、地図に足したい事を教えてください</small></h2>
+  <div class="yhow">
+    <b>書き方</b>　① <b>番号 と 道具</b>　例「13 じょうろ」「29-2 に ひりょうを うごかした」<br>
+    　　　　② <b>地図への要望</b>　例「洗い場の場所がちがう」「○○の置き場を足してほしい」
+  </div>
+  <textarea class="ybox" id="yText" rows="2" maxlength="200" placeholder="ここに書く"></textarea>
+  <div class="ybtn"><span class="ymsg" id="yMsg"></span><button id="yGo" onclick="sendYobo()">送る</button></div>
+  <div class="ysub" id="yoboSub" style="display:none">▼ みんなが書いたメモ（地図に入れる前）　新しい物が上</div>
   <div id="yoboList"></div>
 </div>
 
@@ -634,7 +649,6 @@
     </select></label>
     <label>道具の名前<input type="text" id="mItem" maxlength="40" placeholder="例：しゅろなわ"></label>
     <label>ひとこと（書かなくてもよい）<textarea id="mText" maxlength="200"></textarea></label>
-    <label>書いた人（メモと一緒に名前が出ます）<input type="text" id="mWho" maxlength="20" placeholder="名前"></label>
     <div class="mmsg" id="mMsg"></div>
     <div class="mbtn"><button onclick="closeMemo()">やめる</button><button class="go" id="mGo" onclick="sendMemo()">送る</button></div>
   </div>
@@ -896,13 +910,46 @@ function memosOf(s){ return MEMOS.filter(m=>String(m.no)===String(s.no)); }
 function renderYobo(){
   const box = document.getElementById('yobo'); if(!MEMO_URL){ box.style.display='none'; return; }
   box.style.display = '';
+  document.getElementById('yoboSub').style.display = MEMOS.length ? '' : 'none';
   document.getElementById('yoboList').innerHTML = MEMOS.map((m,i)=>{
     const idx = SPOTS.findIndex(s=>String(s.no)===String(m.no)), sp = idx>=0 ? SPOTS[idx] : null;
-    return '<div class="yrow" data-i="'+idx+'"><span class="hn">'+esc(m.no)+'</span><span>'
-      + (sp ? '<b>'+esc(sp.name)+'</b>　' : '') + esc(m.kind) + (m.item ? '：<b>'+esc(m.item)+'</b>' : '') + (m.text ? '　'+esc(m.text) : '')
-      + '<small>'+esc(m.at||'')+(m.who ? '　'+esc(m.who) : '')+'</small></span></div>';
+    const mine = WHO && m.who === WHO;
+    return '<div class="yrow'+(mine?' mine':'')+'" data-i="'+idx+'"><span class="hn">'+(sp ? esc(m.no) : '要望')+'</span><span>'
+      + (sp ? '<b>'+esc(sp.name)+'</b>　' : '') + (m.kind && m.kind!=='メモ' ? esc(m.kind)+'：' : '') + (m.item ? '<b>'+esc(m.item)+'</b>　' : '') + esc(m.text||'')
+      + '<small>'+esc(m.at||'')+(m.who ? '　'+esc(m.who) : '')+(mine ? '（自分）' : '')+'</small></span></div>';
   }).join('');
   document.querySelectorAll('#yoboList .yrow').forEach(e=>{ const i=+e.getAttribute('data-i'); if(i>=0) e.onclick = ()=>openViewer(i); });
+}
+/* だれが書いたか＝ホームのアプリから開いた時に付いてくる名前（アドレスの # の後ろ・サーバーへは送られない）を、このスマホに覚える。
+   自分で名前を書く欄は無い（11/15 義樹さん「誰が書いたっていうのはわざわざ自分では書かなくてもいい」）。名前が無い時は空のまま送る。 */
+let WHO = '';
+(function(){
+  try{ WHO = localStorage.getItem('shanaimap-who') || ''; }catch(e){}
+  const m = /[#&]w=([^&]+)/.exec(location.hash||'');
+  if(m){
+    try{ WHO = decodeURIComponent(m[1]).slice(0,20); localStorage.setItem('shanaimap-who', WHO); }catch(e){}
+    try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){}
+  }
+})();
+/* 送る（地図の下の白いマス・写真の所の窓の両方から呼ぶ） */
+function postMemo(d, msg, go, done){
+  d.who = WHO;
+  go.disabled = true; msg.textContent = '送っています…';
+  fetch(MEMO_URL, { method:'POST', body: JSON.stringify(d) }).then(r=>r.json()).then(r=>{
+    go.disabled = false;
+    if(!r || !r.ok){ msg.textContent = '送れませんでした。もう一度お願いします。'; return; }
+    msg.textContent = ''; done(); loadMemos();
+  }).catch(()=>{ go.disabled = false; msg.textContent = '送れませんでした。電波の良い所でもう一度お願いします。'; });
+}
+/* 地図の下の白いマスから送る。頭に番号（13・29-2 など）が書いてあれば、その場所のメモにする */
+function sendYobo(){
+  const ta = document.getElementById('yText'), msg = document.getElementById('yMsg'), go = document.getElementById('yGo');
+  const text = ta.value.trim();
+  if(!text){ msg.textContent = '白いマスに書いてから「送る」を押してください。'; return; }
+  const t = text.normalize('NFKC'), m = /^\s*(\d{1,2}(?:\s*[-‐ー−の]\s*\d)?)(?!\d)/.exec(t);
+  let no = '', name = '';
+  if(m){ const k = m[1].replace(/\s*[-‐ー−の]\s*/, '-'); const sp = SPOTS.find(s=>String(s.no)===k); if(sp){ no = String(sp.no); name = sp.name; } }
+  postMemo({ no:no, name:name, kind:'メモ', item:'', text:text }, msg, go, ()=>{ ta.value=''; msg.textContent = '送りました。下に出ます。ありがとうございます。'; });
 }
 function loadMemos(){
   if(!MEMO_URL) return;
@@ -912,8 +959,6 @@ function openMemo(idx){
   const sel = document.getElementById('mSpot');
   if(!sel.options.length) sel.innerHTML = SPOTS.map(s=>'<option value="'+esc(s.no)+'">'+esc(s.no)+'. '+esc(s.name)+'</option>').join('');
   if(idx!==null && idx!==undefined) sel.value = String(SPOTS[idx].no);
-  let who = ''; try{ who = localStorage.getItem('shanaimap-memo-who') || ''; }catch(e){}
-  document.getElementById('mWho').value = who;
   document.getElementById('mItem').value = ''; document.getElementById('mText').value = '';
   document.getElementById('mMsg').textContent = '';
   document.getElementById('memo').classList.add('show');
@@ -922,19 +967,13 @@ function closeMemo(){ document.getElementById('memo').classList.remove('show'); 
 function sendMemo(){
   const v = id=>document.getElementById(id).value.trim();
   const msg = document.getElementById('mMsg'), go = document.getElementById('mGo');
-  const d = { no:v('mSpot'), kind:v('mKind'), item:v('mItem'), text:v('mText'), who:v('mWho') };
+  const d = { no:v('mSpot'), kind:v('mKind'), item:v('mItem'), text:v('mText') };
   const sp = SPOTS.find(s=>String(s.no)===d.no); d.name = sp ? sp.name : '';
   if(!d.item && !d.text){ msg.textContent = '道具の名前か、ひとことを書いてください。'; return; }
-  if(!d.who){ msg.textContent = '書いた人の名前を入れてください。'; return; }
-  try{ localStorage.setItem('shanaimap-memo-who', d.who); }catch(e){}
-  go.disabled = true; msg.textContent = '送っています…';
-  fetch(MEMO_URL, { method:'POST', body: JSON.stringify(d) }).then(r=>r.json()).then(r=>{
-    go.disabled = false;
-    if(!r || !r.ok){ msg.textContent = '送れませんでした。もう一度お願いします。'; return; }
-    msg.textContent = '';
-    closeMemo(); alert('送りました。ありがとうございます。'); loadMemos();
-  }).catch(()=>{ go.disabled = false; msg.textContent = '送れませんでした。電波の良い所でもう一度お願いします。'; });
+  postMemo(d, msg, go, ()=>{ closeMemo(); alert('送りました。ありがとうございます。'); });
 }
+/* 上の帯の「✏️ メモ」＝地図の下の白いマスへ行く */
+function goYobo(){ const y = document.getElementById('yobo'); y.scrollIntoView({behavior:'smooth', block:'start'}); setTimeout(()=>document.getElementById('yText').focus(), 400); }
 if(MEMO_URL){ document.getElementById('memoBtn').style.display = ''; }
 renderYobo();
 function cycleViewer(){
