@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>みどり造園 どこに何があるかマップ</title>
+<style>
+  :root { --sashi:#2e5d34; --shiro:#ffffff; --kinari:#f4f1e8; --moji:#243324; --kin:#c8a24a; --usui:#dfe6d8; }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { font-family:"Yu Gothic UI","Hiragino Sans",Meiryo,sans-serif; background:var(--kinari); color:var(--moji);
+    min-height:100vh; line-height:1.6; }
+  .head { background:var(--shiro); border-bottom:3px solid var(--sashi); padding:18px 18px 16px; position:relative; }
+  .wrap { max-width:640px; margin:0 auto; }
+  .badge { display:inline-block; background:var(--sashi); color:#fff; font-size:12px; font-weight:bold;
+    padding:3px 12px; border-radius:3px; letter-spacing:.1em; }
+  h1 { font-size:24px; margin-top:8px; line-height:1.35; }
+  h1 em { font-style:normal; color:var(--sashi); }
+  .lead { font-size:14px; margin-top:6px; }
+  .ki { position:absolute; right:14px; top:12px; font-size:30px; opacity:.85; }
+  .search { margin-top:14px; }
+  .search input { width:100%; font-size:16px; padding:11px 14px; border:2px solid var(--sashi); border-radius:8px;
+    background:var(--shiro); color:var(--moji); outline:none; }
+  main { padding:18px; }
+  .list { list-style:none; display:grid; gap:12px; }
+  .card { display:flex; align-items:center; gap:14px; background:var(--shiro); border:1px solid var(--usui);
+    border-left:6px solid var(--sashi); border-radius:8px; padding:14px 14px 14px 12px; text-decoration:none; color:inherit; }
+  a.card:active { background:#eef3ea; }
+  .num { font-size:44px; font-weight:bold; color:var(--sashi); opacity:.28; line-height:1; min-width:46px; text-align:center;
+    font-family:Georgia,"Times New Roman",serif; }
+  .body { flex:1; min-width:0; }
+  .name { font-size:19px; font-weight:bold; }
+  .setsu { font-size:13px; margin-top:2px; }
+  .ya { font-size:22px; color:var(--sashi); font-weight:bold; }
+  .card.mada { border-left-color:#b9c4b4; }
+  .card.mada .name { color:#6b786b; }
+  .mada-fuda { display:inline-block; font-size:11px; font-weight:bold; color:var(--sashi); border:1px solid var(--sashi);
+    border-radius:3px; padding:0 7px; margin-left:8px; vertical-align:2px; background:var(--shiro); }
+  .nai { display:none; font-size:14px; padding:14px; text-align:center; }
+  footer { font-size:12px; text-align:center; padding:8px 18px 26px; color:#5d6b5d; }
+</style>
+</head>
+<body>
+<header class="head">
+  <div class="wrap">
+    <span class="badge">みどり造園のマップ</span>
+    <span class="ki" aria-hidden="true">🌲</span>
+    <h1><em>どこに何があるか</em>マップ</h1>
+    <p class="lead">見たい場所を押すと、その場所の地図が開きます。</p>
+    <div class="search"><input id="q" type="text" placeholder="場所の名前で探す（ひらがなで）" autocomplete="off"></div>
+  </div>
+</header>
+<main>
+  <div class="wrap">
+    <ul class="list" id="list"></ul>
+    <p class="nai" id="nai">当てはまる場所がありません。</p>
+  </div>
+</main>
+<footer>どこに何があるかマップ ｜ 株式会社みどり造園</footer>
+
+<script>
+/* ============================================================
+   場所の一覧。場所を足す時は、この下に1行足す（上から順に 1・2・3… と番号が付く）。
+   name … 画面に出る名前
+   yomi … ひらがなの読み（検索用。「、」で区切っていくつでも）
+   setsu… 名前の下に出る短い説明
+   url  … 押した時に開く地図。まだ無い時は "" にすると「準備中」と出る
+   ============================================================ */
+const BASHO = [
+  { name:"会社（資材置き場）", yomi:"かいしゃ、しざいおきば、しゃないまっぷ、ほんしゃ", setsu:"今までの社内マップ。道具や材料の置き場所", url:"../" },
+  { name:"若林の土場", yomi:"わかばやしのどば、わかばやし、どば", setsu:"場所の地図", url:"" },
+  { name:"刈谷の土場", yomi:"かりやのどば、かりや、どば", setsu:"場所の地図", url:"" }
+];
+
+/* ホームから渡された名前（#w=名前）は、そのまま次の地図へ渡す */
+const HASH = /[#&]w=/.test(location.hash||'') ? location.hash : '';
+function norm(t){
+  return String(t||'').normalize('NFKC').toLowerCase().replace(/[\s　・\-‐ー−（）()、。]/g,'')
+    .replace(/[ァ-ヶ]/g, c=>String.fromCharCode(c.charCodeAt(0)-0x60));
+}
+function esc(t){ return String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const list = document.getElementById('list'), nai = document.getElementById('nai');
+function draw(){
+  const q = norm(document.getElementById('q').value);
+  let n = 0, h = '';
+  BASHO.forEach((b,i)=>{
+    if(q && norm(b.name+'|'+b.yomi).indexOf(q) < 0) return;
+    n++;
+    const naka = '<span class="num">'+(i+1)+'</span><span class="body"><span class="name">'+esc(b.name)+
+      (b.url ? '' : '<span class="mada-fuda">準備中</span>')+'</span><br><span class="setsu">'+esc(b.setsu)+'</span></span>';
+    h += b.url
+      ? '<li><a class="card" href="'+esc(b.url+HASH)+'">'+naka+'<span class="ya">›</span></a></li>'
+      : '<li><div class="card mada">'+naka+'</div></li>';
+  });
+  list.innerHTML = h;
+  nai.style.display = n ? 'none' : 'block';
+}
+document.getElementById('q').addEventListener('input', draw);
+draw();
+</script>
+</body>
+</html>
