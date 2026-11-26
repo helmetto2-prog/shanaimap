@@ -121,9 +121,10 @@ function miseru(b){
   if(!b || !b.lat || dete === b.id) return;
   dete = b.id;
   const s = sakiOf(b);
-  const g = 'https://www.google.com/maps/search/?api=1&query=' + b.lat + ',' + b.lng;
+  const doko = b.jushoDe && b.jusho ? encodeURIComponent(b.jusho) : (b.lat + ',' + b.lng);   // 住所で出す場所は住所・ほかは緯度経度
+  const g = 'https://www.google.com/maps/search/?api=1&query=' + doko;
   zen.innerHTML = '<iframe title="' + esc(b.name) + ' の地図" allowfullscreen referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=' +
-    b.lat + ',' + b.lng + '&z=15&t=m&hl=ja&output=embed"></iframe>';
+    doko + '&z=15&t=m&hl=ja&output=embed"></iframe>';
   imaEl.innerHTML = '<b>' + (isGenba(b) ? '現場 ' : '') + bango(b) + '　' + esc(b.name) + '</b><p>' + esc(b.setsu||'') + '</p>' +
     (s ? '<a href="' + esc(s) + '">くわしく見る</a>' : '') +
     '<a class="sub" target="_blank" rel="noopener" href="' + g + '">Googleマップで開く</a>';

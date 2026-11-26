@@ -56,7 +56,8 @@ if(!b){
 } else {
   document.title = 'みどり造園 ' + b.name;
   document.getElementById('namae').textContent = b.name;
-  const g = 'https://www.google.com/maps/search/?api=1&query=' + b.lat + ',' + b.lng;
+  const doko = b.jushoDe && b.jusho ? encodeURIComponent(b.jusho) : (b.lat + ',' + b.lng);   // 住所で出す場所は住所・ほかは緯度経度
+  const g = 'https://www.google.com/maps/search/?api=1&query=' + doko;
   info.innerHTML =
     (b.jusho ? '<p>' + esc(b.jusho) + '</p>' : '') +
     (b.memo ? '<p class="memo">' + esc(b.memo) + '</p>' : '') +
@@ -73,7 +74,7 @@ if(!b){
   const mapEl = document.getElementById('map');
   function dasu(k){
     mapEl.innerHTML = '<iframe title="' + esc(b.name) + ' の地図" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=' +
-      b.lat + ',' + b.lng + '&z=18&t=' + k + '&hl=ja&output=embed"></iframe>';
+      doko + '&z=18&t=' + k + '&hl=ja&output=embed"></iframe>';
   }
   let ima = 'k';   // k＝写真 ／ m＝地図
   dasu(ima);
