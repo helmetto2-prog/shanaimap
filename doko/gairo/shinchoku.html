@@ -32,6 +32,7 @@
   .masu button { font-family:inherit; font-size:15px; text-align:left; padding:9px 12px; border-radius:8px; border:2px solid var(--usui); background:#fafaf6; color:var(--moji); }
   .masu button.kan { background:var(--sashi); border-color:var(--sashi); color:#fff; font-weight:bold; }
   .masu button.tochu { background:repeating-linear-gradient(45deg,#fff7d6,#fff7d6 8px,#f1dfa0 8px,#f1dfa0 16px); border-color:var(--tochu); font-weight:bold; }
+  .masu input[type=range] { width:100%; height:34px; accent-color:var(--sashi); margin:-2px 0 4px; touch-action:pan-y; }
   .masu button.erabi { outline:3px dashed var(--sashi); }
   .kazu { display:flex; flex-direction:column; gap:4px; justify-content:center; }
   #bun { width:100%; min-height:110px; font-family:inherit; font-size:15px; padding:10px; border:2px solid var(--sashi); border-radius:8px; background:var(--shiro); color:var(--moji); }
@@ -44,7 +45,7 @@
 <header class="head"><div class="wrap">
   <span class="badge">豊田街路 進み具合</span><span class="ki" aria-hidden="true">🌲</span>
   <h1><em id="hno"></em> <span id="hna"></span></h1>
-  <p class="lead">マスを押すと 完了 → 途中 → なし と変わります。下に日報の文が出ます。</p>
+  <p class="lead">マスを押すと 完了 → 途中 → なし と変わります。途中はバーを指で動かして、何％くらいかを入れます。</p>
 </div></header>
 <main><div class="wrap">
   <section><h2><em>作業</em>と日</h2>
@@ -78,7 +79,7 @@ const R = ROSEN.filter(r=>r.no===no)[0] || ROSEN[0];
 const H = HAJIME[R.no] || { kita:'始まりの側', minami:'終わりの側', gawa:[['chuo','中央分離帯','島'],['hidari','左の植樹帯','マス'],['migi','右の植樹帯','マス']], me:['始まり','終わり'] };
 let S = {}; try { S = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch(e){ S = {}; }
 const D = S[R.no] = S[R.no] || {};
-D.me = D.me || H.me.slice(); D.shima = D.shima || {}; D.nuri = D.nuri || {}; D.sagyo = D.sagyo || '高木剪定'; D.hi = D.hi || ''; D.gawa = D.gawa || H.gawa[0][0];
+D.me = D.me || H.me.slice(); D.shima = D.shima || {}; D.nuri = D.nuri || {}; D.pct = D.pct || {}; D.sagyo = D.sagyo || '高木剪定'; D.hi = D.hi || ''; D.gawa = D.gawa || H.gawa[0][0];
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
 function esc(t){ return String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 const $ = id=>document.getElementById(id);
@@ -86,6 +87,8 @@ let matome = false, hajimari = null, naoshi = false;
 function gawaOf(){ return H.gawa.filter(g=>g[0]===D.gawa)[0] || H.gawa[0]; }
 function kazu(i){ return D.shima[D.gawa+'|'+i] || 1; }
 function nk(i,j){ return D.gawa+'|'+D.sagyo+'|'+i+'|'+j; }
+function pct(i,j){ return D.pct[nk(i,j)] || 50; }
+function nuriE(p){ return 'background:linear-gradient(90deg,#a9cfa9 '+p+'%,#fff7d6 '+p+'%)'; }
 function narabi(){ const a=[]; for(let i=0;i<D.me.length-1;i++) for(let j=0;j<kazu(i);j++) a.push([i,j]); return a; }
 function draw(){
   $('hno').textContent = R.no; $('hna').textContent = R.name; $('kita').textContent = '↑ ' + H.kita; $('minami').textContent = '↓ ' + H.minami;
@@ -102,7 +105,9 @@ function draw(){
       let b = '';
       for(let j=0;j<kazu(i);j++){
         const v = D.nuri[nk(i,j)] || '', er = hajimari && hajimari[0]===i && hajimari[1]===j;
-        b += '<button data-i="'+i+'" data-j="'+j+'" class="'+v+(er?' erabi':'')+'">'+(kazu(i)>1 ? (j+1)+'つめの'+tani : 'この間')+(v==='kan'?'　完了':v==='tochu'?'　途中':'')+'</button>';
+        const na = kazu(i)>1 ? (j+1)+'つめの'+tani : 'この間';
+        b += '<button data-i="'+i+'" data-j="'+j+'" data-na="'+na+'" class="'+v+(er?' erabi':'')+'"'+(v==='tochu'?' style="'+nuriE(pct(i,j))+'"':'')+'>'+na+(v==='kan'?'　完了':v==='tochu'?'　途中 '+pct(i,j)+'%':'')+'</button>'+
+          (v==='tochu' ? '<input type="range" min="10" max="90" step="10" value="'+pct(i,j)+'" data-pi="'+i+'" data-pj="'+j+'" aria-label="'+na+' の進み具合">' : '');
       }
       h += '<div class="aida"><div class="masu">'+b+'</div><div class="kazu"><button class="btn chiisai" data-fu="'+i+'">＋</button><button class="btn chiisai" data-he="'+i+'">−</button></div></div>';
     }
@@ -113,11 +118,13 @@ function bun(){
   const g = gawaOf(), tani = g[2], gyo = [];
   for(let i=0;i<D.me.length-1;i++){
     const n = kazu(i), aida = D.me[i] + '〜' + D.me[i+1];
-    ['kan','tochu'].forEach(shu=>{
-      const na = shu==='kan' ? '完了' : '途中'; let j = 0;
+    const fu = j=>{ const v = D.nuri[nk(i,j)] || ''; return v==='tochu' ? 'tochu'+pct(i,j) : v; };
+    const shurui = ['kan']; for(let p=90;p>=10;p-=10) shurui.push('tochu'+p);
+    shurui.forEach(shu=>{
+      const na = shu==='kan' ? '完了' : '途中（'+shu.slice(5)+'%くらい）'; let j = 0;
       while(j < n){
-        if((D.nuri[nk(i,j)]||'') !== shu){ j++; continue; }
-        let k = j; while(k+1 < n && (D.nuri[nk(i,k+1)]||'') === shu) k++;
+        if(fu(j) !== shu){ j++; continue; }
+        let k = j; while(k+1 < n && fu(k+1) === shu) k++;
         gyo.push('・' + aida + (n===1 ? '' : (j===0 && k===n-1 ? '　全部（'+n+tani+'）' : '　'+(j===k ? (j+1)+'つめの'+tani : (j+1)+'〜'+(k+1)+'つめの'+tani))) + '　' + na);
         j = k + 1;
       }
@@ -131,9 +138,9 @@ document.addEventListener('click', e=>{
   else if(x.id==='matomete'){ matome = !matome; hajimari = null; }
   else if(x.id==='naosu'){ naoshi = !naoshi; }
   else if(x.id==='copy'){ const t = $('bun'); t.select(); (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject()).catch(()=>document.execCommand('copy')); x.textContent = 'コピーしました'; setTimeout(()=>x.textContent='文をコピー', 1500); return; }
-  else if(x.id==='kesu'){ if(!confirm(gawaOf()[1]+'・'+D.sagyo+' の色を消しますか？')) return; Object.keys(D.nuri).forEach(k=>{ if(k.indexOf(D.gawa+'|'+D.sagyo+'|')===0) delete D.nuri[k]; }); }
+  else if(x.id==='kesu'){ if(!confirm(gawaOf()[1]+'・'+D.sagyo+' の色を消しますか？')) return; [D.nuri, D.pct].forEach(o=>Object.keys(o).forEach(k=>{ if(k.indexOf(D.gawa+'|'+D.sagyo+'|')===0) delete o[k]; })); }
   else if(d.fu){ D.shima[D.gawa+'|'+d.fu] = Math.min(kazu(+d.fu)+1, 30); }
-  else if(d.he){ const i=+d.he, n=kazu(i); if(n>1){ Object.keys(D.nuri).forEach(k=>{ const p=k.split('|'); if(p[0]===D.gawa && +p[2]===i && +p[3]===n-1) delete D.nuri[k]; }); D.shima[D.gawa+'|'+i] = n-1; } }
+  else if(d.he){ const i=+d.he, n=kazu(i); if(n>1){ [D.nuri, D.pct].forEach(o=>Object.keys(o).forEach(k=>{ const p=k.split('|'); if(p[0]===D.gawa && +p[2]===i && +p[3]===n-1) delete o[k]; })); D.shima[D.gawa+'|'+i] = n-1; } }
   else if(d.tasu){ D.me.splice(+d.tasu+1, 0, '新しい目印'); zurasu(+d.tasu+1, 1); }
   else if(d.toru){ if(!confirm('「'+D.me[+d.toru]+'」を取りますか？')) return; D.me.splice(+d.toru, 1); zurasu(+d.toru, -1); }
   else if(d.i !== undefined){
@@ -142,7 +149,7 @@ document.addEventListener('click', e=>{
       if(!hajimari){ hajimari = [i,j]; }
       else { const a = narabi(), p = a.findIndex(q=>q[0]===hajimari[0]&&q[1]===hajimari[1]), q2 = a.findIndex(q=>q[0]===i&&q[1]===j);
         a.slice(Math.min(p,q2), Math.max(p,q2)+1).forEach(q=>D.nuri[nk(q[0],q[1])]='kan'); hajimari = null; matome = false; }
-    } else { const k = nk(i,j), v = D.nuri[k] || ''; if(v==='') D.nuri[k]='kan'; else if(v==='kan') D.nuri[k]='tochu'; else delete D.nuri[k]; }
+    } else { const k = nk(i,j), v = D.nuri[k] || ''; if(v==='') D.nuri[k]='kan'; else if(v==='kan') D.nuri[k]='tochu'; else { delete D.nuri[k]; delete D.pct[k]; } }
   } else return;
   save(); draw();
 });
@@ -150,8 +157,17 @@ document.addEventListener('click', e=>{
 function zurasu(kara, n){
   const f = (o, pos)=>{ const nw = {}; Object.keys(o).forEach(k=>{ const p = k.split('|'); let i = +p[pos];
       if(n < 0 && i === kara) return; if(i >= kara) i += n; if(i < 0) return; p[pos] = i; nw[p.join('|')] = o[k]; }); return nw; };
-  D.shima = f(D.shima, 1); D.nuri = f(D.nuri, 2);
+  D.shima = f(D.shima, 1); D.nuri = f(D.nuri, 2); D.pct = f(D.pct, 2);
 }
+/* 途中のバーを指で動かす：10% 刻み。動かしている間は帯を作り直さない（指が外れないように） */
+document.addEventListener('input', e=>{
+  const t = e.target; if(t.dataset.pi === undefined) return;
+  const i = +t.dataset.pi, j = +t.dataset.pj, v = Math.max(10, Math.min(90, Math.round(+t.value/10)*10));
+  D.pct[nk(i,j)] = v; save();
+  const b = document.querySelector('.masu button[data-i="'+i+'"][data-j="'+j+'"]');
+  if(b){ b.setAttribute('style', nuriE(v)); b.textContent = b.dataset.na + '　途中 ' + v + '%'; }
+  bun();
+});
 document.addEventListener('change', e=>{
   const t = e.target;
   if(t.id==='sagyo'){ D.sagyo = t.value; hajimari = null; save(); draw(); }
