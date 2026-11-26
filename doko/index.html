@@ -45,6 +45,9 @@
   .fuki a { display:inline-block; margin:8px 8px 0 0; font-size:14px; font-weight:bold; color:#fff; background:var(--sashi);
     padding:7px 12px; border-radius:6px; text-decoration:none; }
   .fuki a.sub { color:var(--sashi); background:var(--shiro); border:2px solid var(--sashi); padding:5px 10px; }
+  .midashi { list-style:none; margin-top:6px; }
+  .midashi:first-child { margin-top:0; }
+  .midashi .badge { font-size:13px; padding:3px 14px; }
   .nai { display:none; font-size:14px; padding:14px; text-align:center; }
   footer { font-size:12px; text-align:center; padding:8px 18px 26px; color:#5d6b5d; }
 </style>
@@ -58,6 +61,7 @@
     <p class="lead">場所を選ぶか名前で探すと、Googleの地図に出ます。</p>
     <div class="search"><input id="q" type="text" placeholder="場所の名前で探す（ひらがなで）" autocomplete="off"></div>
     <div class="erabu"><select id="sel" aria-label="場所を選ぶ"></select></div>
+    <div class="erabu"><select id="sel2" aria-label="現場を選ぶ"></select></div>
   </div>
 </header>
 <div id="zentai"></div>
@@ -82,26 +86,33 @@ function norm(t){
 }
 function esc(t){ return String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 const list = document.getElementById('list'), nai = document.getElementById('nai');
+/* 場所（現場以外）と現場に分ける。番号はそれぞれ 1 から */
+function isGenba(b){ return b.shu === 'genba'; }
+const KUMI = [ { na:'場所', hito:BASHO.filter(b=>!isGenba(b)) }, { na:'現場', hito:BASHO.filter(isGenba) } ];
+function bango(b){ const k = KUMI[isGenba(b) ? 1 : 0].hito; return k.indexOf(b) + 1; }
+/* 行き先：url があればそこ・緯度経度があれば地図のページ・どちらも無ければ準備中 */
+function sakiOf(b){ return b.url ? b.url + HASH : (b.lat ? 'chizu.html#b=' + b.id + (HASH ? '&' + HASH.replace(/^#/,'') : '') : ''); }
+function ataru(b, q){ return !q || norm(b.name+'|'+b.yomi+'|'+(b.jusho||'')+'|'+(b.items||[]).join('|')).indexOf(q) >= 0; }
 function draw(){
   const q = norm(document.getElementById('q').value);
   let n = 0, h = '';
-  BASHO.forEach((b,i)=>{
-    if(q && norm(b.name+'|'+b.yomi+'|'+(b.jusho||'')+'|'+(b.items||[]).join('|')).indexOf(q) < 0) return;
-    n++;
-    /* 行き先：url があればそこ・緯度経度があれば地図のページ・どちらも無ければ準備中 */
-    const saki = b.url ? b.url + HASH : (b.lat ? 'chizu.html#b=' + b.id + (HASH ? '&' + HASH.replace(/^#/,'') : '') : '');
-    const naka = '<span class="num">'+(i+1)+'</span><span class="body"><span class="name">'+esc(b.name)+
-      (saki ? '' : '<span class="mada-fuda">準備中</span>')+'</span><br><span class="setsu">'+esc(b.setsu)+'</span></span>';
-    h += saki
-      ? '<li><a class="card" href="'+esc(saki)+'">'+naka+'<span class="ya">›</span></a></li>'
-      : '<li><div class="card mada">'+naka+'</div></li>';
+  KUMI.forEach(k=>{
+    const at = k.hito.filter(b=>ataru(b,q));
+    if(!at.length) return;
+    h += '<li class="midashi"><span class="badge">' + k.na + '（' + at.length + 'か所）</span></li>';
+    at.forEach(b=>{
+      n++;
+      const saki = sakiOf(b);
+      const naka = '<span class="num">'+bango(b)+'</span><span class="body"><span class="name">'+esc(b.name)+
+        (saki ? '' : '<span class="mada-fuda">準備中</span>')+'</span><br><span class="setsu">'+esc(b.setsu||'')+'</span></span>';
+      h += saki
+        ? '<li><a class="card" href="'+esc(saki)+'">'+naka+'<span class="ya">›</span></a></li>'
+        : '<li><div class="card mada">'+naka+'</div></li>';
+    });
   });
   list.innerHTML = h;
   nai.style.display = n ? 'none' : 'block';
 }
-/* 行き先（一覧のカードと同じ決め方） */
-function sakiOf(b){ return b.url ? b.url + HASH : (b.lat ? 'chizu.html#b=' + b.id + (HASH ? '&' + HASH.replace(/^#/,'') : '') : ''); }
-function ataru(b, q){ return !q || norm(b.name+'|'+b.yomi+'|'+(b.jusho||'')+'|'+(b.items||[]).join('|')).indexOf(q) >= 0; }
 
 /* 上の地図＝Google の地図。選んだ場所（探した時はいちばん上に当たった場所）を1か所ずつ出す */
 const zen = document.getElementById('zentai'), imaEl = document.getElementById('ima');
@@ -109,27 +120,34 @@ let dete = '';
 function miseru(b){
   if(!b || !b.lat || dete === b.id) return;
   dete = b.id;
-  const i = BASHO.indexOf(b), s = sakiOf(b);
+  const s = sakiOf(b);
   const g = 'https://www.google.com/maps/search/?api=1&query=' + b.lat + ',' + b.lng;
   zen.innerHTML = '<iframe title="' + esc(b.name) + ' の地図" allowfullscreen referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=' +
     b.lat + ',' + b.lng + '&z=15&t=m&hl=ja&output=embed"></iframe>';
-  imaEl.innerHTML = '<b>' + (i+1) + '　' + esc(b.name) + '</b><p>' + esc(b.setsu||'') + '</p>' +
+  imaEl.innerHTML = '<b>' + (isGenba(b) ? '現場 ' : '') + bango(b) + '　' + esc(b.name) + '</b><p>' + esc(b.setsu||'') + '</p>' +
     (s ? '<a href="' + esc(s) + '">くわしく見る</a>' : '') +
     '<a class="sub" target="_blank" rel="noopener" href="' + g + '">Googleマップで開く</a>';
 }
-/* 選ぶ方法：場所の名前の一覧から選ぶと、地図がその場所に変わる */
-const sel = document.getElementById('sel');
-sel.innerHTML = '<option value="">場所を選ぶ（' + BASHO.length + 'か所）</option>' +
-  BASHO.map((b,i)=>'<option value="' + b.id + '">' + (i+1) + '　' + esc(b.name) + '</option>').join('');
-sel.addEventListener('change', function(){
-  const b = BASHO.filter(x=>x.id === this.value)[0]; if(!b) return;
-  document.getElementById('q').value = ''; draw(); miseru(b);
-  zen.scrollIntoView({ behavior:'smooth', block:'start' });
-});
+/* 選ぶ方法：「場所を選ぶ」（現場以外）と「現場を選ぶ」。選ぶと地図がそこに変わる */
+const sel = document.getElementById('sel'), sel2 = document.getElementById('sel2');
+function tsumeru(el, k, kotoba){
+  el.innerHTML = '<option value="">' + kotoba + '（' + k.hito.length + 'か所）</option>' +
+    k.hito.map((b,i)=>'<option value="' + b.id + '">' + (i+1) + '　' + esc(b.name) + '</option>').join('');
+}
+tsumeru(sel, KUMI[0], '場所を選ぶ'); tsumeru(sel2, KUMI[1], '現場を選ぶ');
+function eranda(el, hoka){
+  el.addEventListener('change', function(){
+    const b = BASHO.filter(x=>x.id === this.value)[0]; if(!b) return;
+    hoka.value = '';
+    document.getElementById('q').value = ''; draw(); miseru(b);
+    zen.scrollIntoView({ behavior:'smooth', block:'start' });
+  });
+}
+eranda(sel, sel2); eranda(sel2, sel);
 /* 探す方法：打ち終わって少ししてから、いちばん上に当たった場所を地図に出す */
 let matsu = 0;
 document.getElementById('q').addEventListener('input', function(){
-  sel.value = ''; draw();
+  sel.value = ''; sel2.value = ''; draw();
   clearTimeout(matsu);
   matsu = setTimeout(function(){
     const q = norm(document.getElementById('q').value); if(!q) return;
