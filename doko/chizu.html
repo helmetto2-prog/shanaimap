@@ -61,6 +61,12 @@ if(!b){
     (b.jusho ? '<p>' + esc(b.jusho) + '</p>' : '') +
     (b.memo ? '<p class="memo">' + esc(b.memo) + '</p>' : '') +
     (b.items && b.items.length ? '<p class="mono"><b>ある物</b>　' + b.items.map(esc).join('・') + '</p>' : '') +
+    (function(){   /* 関連する場所（basho.js の kanren）へ行くボタン */
+      const k = (b.kanren||[]).map(id=>BASHO.filter(x=>x.id===id && x.lat)[0]).filter(Boolean);
+      if(!k.length) return '';
+      return '<p class="mono"><b>関連する場所</b></p><div class="btns">' + k.map(x=>
+        '<a class="btn" href="#b=' + x.id + (wm ? '&' + wm[1] : '') + '">' + esc(x.name) + ' ›</a>').join('') + '</div>';
+    })() +
     '<div class="btns"><a class="btn omo" target="_blank" rel="noopener" href="' + g + '">Googleマップで開く</a>' +
     '<button class="btn" id="kirikae" type="button">地図に切りかえ</button></div>';
   /* 地図＝Google の地図をそのまま出す（写真と地図を切りかえ） */
