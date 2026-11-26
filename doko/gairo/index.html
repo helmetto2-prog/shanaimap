@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>豊田街路の手引き ｜ まるっとマップ</title>
+<style>
+  :root { --sashi:#2e5d34; --shiro:#fff; --kinari:#f4f1e8; --moji:#243324; --usui:#dfe6d8; --dame:#b3261e; }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { font-family:"Yu Gothic UI","Hiragino Sans",Meiryo,sans-serif; background:var(--kinari); color:var(--moji); line-height:1.6; }
+  .wrap { max-width:640px; margin:0 auto; }
+  .head { background:var(--shiro); border-bottom:3px solid var(--sashi); padding:16px 16px 14px; position:relative; }
+  .badge { display:inline-block; background:var(--sashi); color:#fff; font-size:12px; font-weight:bold; padding:3px 12px; border-radius:3px; letter-spacing:.08em; }
+  h1 { font-size:23px; margin-top:6px; } h1 em { font-style:normal; color:var(--sashi); }
+  .lead { font-size:13px; margin-top:4px; }
+  .ki { position:absolute; right:14px; top:12px; font-size:28px; opacity:.85; }
+  .mihon { background:#fff7d6; border:1px solid #c8a24a; font-size:12px; padding:6px 12px; text-align:center; }
+  #chizu { height:46vh; min-height:280px; background:#cfd8c8; }
+  #chizu iframe { width:100%; height:100%; border:0; display:block; }
+  #ima { background:var(--shiro); border-bottom:3px solid var(--sashi); padding:8px 14px 12px; font-size:13px; }
+  #ima b { font-size:15px; }
+  .btn { display:inline-block; margin:8px 8px 0 0; font-size:14px; font-weight:bold; color:#fff; background:var(--sashi); padding:7px 12px; border-radius:6px; text-decoration:none; border:0; font-family:inherit; }
+  .btn.sub { color:var(--sashi); background:var(--shiro); border:2px solid var(--sashi); padding:5px 10px; }
+  main { padding:16px; } section { margin-bottom:22px; }
+  h2 { font-size:17px; margin:8px 0; } h2 em { font-style:normal; color:var(--sashi); }
+  .rosen { list-style:none; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .rosen button { width:100%; text-align:left; display:flex; align-items:center; gap:8px; background:var(--shiro); border:1px solid var(--usui);
+    border-radius:8px; padding:8px 10px; font-family:inherit; font-size:13px; color:inherit; }
+  .rosen .iro { width:10px; align-self:stretch; border-radius:3px; flex:none; }
+  .rosen .no { font-size:19px; font-weight:bold; font-family:Georgia,serif; }
+  .rosen .mada { opacity:.55; } .rosen .on { outline:3px solid var(--sashi); }
+  .rosen small { display:block; font-size:11px; line-height:1.3; }
+  .hako { background:var(--shiro); border:1px solid var(--usui); border-top:5px solid var(--sashi); border-radius:8px; padding:10px 12px; font-size:13px; }
+  .hako ul { padding-left:1.2em; }
+  table { width:100%; border-collapse:collapse; font-size:13px; background:var(--shiro); }
+  th, td { border:1px solid var(--usui); padding:5px 6px; text-align:center; } th { background:#e9efe4; }
+  .erabu { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0; align-items:center; font-size:13px; }
+  .erabu button { font-family:inherit; font-size:14px; padding:6px 12px; border-radius:20px; border:2px solid var(--sashi); background:var(--shiro); color:var(--sashi); font-weight:bold; }
+  .erabu button.on { background:var(--sashi); color:#fff; }
+  .kukan { background:var(--shiro); border:1px solid var(--usui); border-left:6px solid var(--sashi); border-radius:8px; margin-top:12px; overflow:hidden; }
+  .kukan h3 { display:flex; align-items:center; gap:10px; padding:8px 12px; font-size:16px; background:#eef3ea; }
+  .kukan h3 .num { font-size:34px; font-family:Georgia,serif; color:var(--sashi); opacity:.35; line-height:1; }
+  .kukan h3 button { margin-left:auto; }
+  .ten { padding:9px 12px; border-top:1px solid var(--usui); font-size:14px; }
+  .fuda { display:inline-block; font-size:12px; font-weight:bold; padding:1px 9px; border-radius:3px; background:var(--sashi); color:#fff; margin-right:6px; }
+  .fuda.dame, .fuda.chui { background:var(--dame); }
+  .fuda.mawaru, .fuda.jikan, .fuda.guard, .fuda.hajime { background:var(--shiro); color:var(--sashi); border:1px solid var(--sashi); }
+  .jo { display:inline-block; font-size:12px; border:1px solid #c8a24a; background:#fff7d6; border-radius:3px; padding:0 7px; margin-left:4px; }
+  .riyu { font-size:12px; color:#5d6b5d; } .ten .btn { font-size:12px; padding:4px 9px; margin-top:5px; }
+  .ten.kieru { display:none; }
+  footer { font-size:12px; text-align:center; padding:6px 16px 26px; color:#5d6b5d; }
+</style>
+</head>
+<body>
+<div class="mihon">地図の線とピンは目安です。ピンは目印のお店の場所で、停める所そのものではありません。</div>
+<header class="head"><div class="wrap">
+  <span class="badge">豊田街路 7工区</span><span class="ki" aria-hidden="true">🌲</span>
+  <h1>路線を選んで<em>手引き</em>を見る</h1>
+  <p class="lead">路線を押すと、区間ごとの停める所・回る道・注意が出ます。</p>
+</div></header>
+<div id="chizu"></div>
+<div id="ima"></div>
+<main><div class="wrap">
+  <section><h2><em>路線</em>を選ぶ（15本）</h2><ul class="rosen" id="rosen"></ul></section>
+  <section><h2>街路の<em>共通の決まり</em></h2><div class="hako"><ul id="kyotsu"></ul></div></section>
+  <section id="shosai"></section>
+</div></main>
+<footer><a href="../" id="modoru" style="color:#2e5d34;font-weight:bold">← まるっとマップにもどる</a><br>豊田街路の手引き ｜ 株式会社みどり造園</footer>
+<script src="rosen.js"></script>
+<script src="tebiki.js"></script>
+<script>
+const FUDA = { tomeru:'停める', dame:'停めない', mawaru:'回る道', chui:'注意', guard:'ガードマン', jikan:'時間', hajime:'始まり' };
+function esc(t){ return String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const jo = { dai:0, kuruma:'' };   // 選んだ条件（0・'' は全部）
+let ima = '';
+document.getElementById('kyotsu').innerHTML = KYOTSU.map(k=>'<li>'+esc(k)+'</li>').join('');
+function chizu(pin, na, setsu){
+  const q = pin[0] + ',' + pin[1];
+  document.getElementById('chizu').innerHTML = '<iframe title="'+esc(na)+' の地図" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q='+q+'&z=17&t=m&hl=ja&output=embed"></iframe>';
+  document.getElementById('ima').innerHTML = '<b>'+esc(na)+'</b><br>'+esc(setsu||'')+'<br>'+
+    '<a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query='+q+'">Googleマップで開く</a>'+
+    '<a class="btn sub" target="_blank" rel="noopener" href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint='+q+'">ストリートビュー</a>'+
+    '<button class="btn sub" data-zen="1">色分けの地図にもどる</button>';
+}
+const MYMAP = 'https://www.google.com/maps/d/embed?mid=1joioDJAIb3fTUBaY3ad-eJKHunUdCjc&hl=ja&ehbc=2E312F';
+function zentai(){
+  document.getElementById('chizu').innerHTML = '<iframe title="豊田街路 7工区の色分けの地図" src="'+MYMAP+'"></iframe>';
+  document.getElementById('ima').innerHTML = '<b>豊田街路 7工区（色分けの地図）</b><br>線を押すと路線の番号と名前が出ます。くわしく見る時は、下で路線を選びます。';
+}
+function naka(r){ const s = r.sen[0]; return s[Math.floor(s.length/2)]; }
+function rosenList(){
+  document.getElementById('rosen').innerHTML = ROSEN.map(r=>{
+    const aru = !!TEBIKI[r.no];
+    return '<li><button data-no="'+r.no+'" class="'+(aru?'':'mada')+(ima===r.no?' on':'')+'"><span class="iro" style="background:'+r.iro+'"></span><span><span class="no">'+r.no+'</span><small>'+esc(r.name)+(aru?'':'（準備中）')+'</small></span></button></li>';
+  }).join('');
+}
+function ataru(t){
+  if(jo.dai && t.dai && t.dai !== jo.dai) return false;
+  if(jo.kuruma && t.kuruma && t.kuruma !== jo.kuruma) return false;
+  return true;
+}
+function joFuda(t){
+  let h = '';
+  if(t.dai) h += '<span class="jo">車が'+t.dai+'台の時</span>';
+  if(t.kuruma) h += '<span class="jo">'+(t.kuruma==='kei'?'軽自動車':'トヨエース')+'</span>';
+  if(t.muki==='hantai') h += '<span class="jo">反対車線を作業する時</span>';
+  return h;
+}
+function shosai(){
+  const r = ROSEN.filter(x=>x.no===ima)[0], el = document.getElementById('shosai');
+  if(!r){ el.innerHTML = ''; return; }
+  const t = TEBIKI[r.no];
+  let h = '<h2><em>'+r.no+'</em> '+esc(r.name)+'（約'+r.nagasa+'m）</h2>';
+  if(!t){ el.innerHTML = h + '<div class="hako">この路線の手引きは準備中です。</div>'; return; }
+  h += '<table><tr><th>作業</th><th>回</th><th>月</th><th>日数</th><th>人数</th><th>延べ</th></tr>'+
+    t.meyasu.map(m=>'<tr><td>'+m.shu+'</td><td>'+m.kai+'</td><td>'+m.tsuki+'</td><td>'+m.hi+'</td><td>'+m.nin+'</td><td>'+m.nobe+'人</td></tr>').join('')+'</table>';
+  const b = (k,v,na)=>'<button data-k="'+k+'" data-v="'+v+'" class="'+(String(jo[k])===String(v)?'on':'')+'">'+na+'</button>';
+  h += '<div class="erabu">今日の車：'+b('dai',0,'全部')+b('dai',1,'1台')+b('dai',2,'2台')+'</div>'+
+       '<div class="erabu">車の種類：'+b('kuruma','','全部')+b('kuruma','kei','軽')+b('kuruma','toyo','トヨエース')+'</div>';
+  t.kukan.forEach((k,i)=>{
+    h += '<div class="kukan"><h3><span class="num">'+(i+1)+'</span>'+esc(k.na)+'<button class="btn sub" data-ku="'+i+'">地図</button></h3>'+
+      k.ten.map((p,j)=>'<div class="ten'+(ataru(p)?'':' kieru')+'"><span class="fuda '+p.fuda+'">'+FUDA[p.fuda]+'</span><b>'+esc(p.doko)+'</b>'+joFuda(p)+
+        '<br>'+esc(p.suru)+(p.riyu?'<br><span class="riyu">理由：'+esc(p.riyu)+'</span>':'')+
+        (p.pin?'<br><button class="btn sub" data-ku="'+i+'" data-te="'+j+'">この付近を地図に出す</button>':'')+'</div>').join('')+'</div>';
+  });
+  el.innerHTML = h;
+}
+document.addEventListener('click', e=>{
+  const x = e.target.closest('button'); if(!x) return;
+  if(x.dataset.zen){ zentai(); return; }
+  if(x.dataset.no){
+    ima = x.dataset.no; const r = ROSEN.filter(q=>q.no===ima)[0];
+    rosenList(); shosai(); chizu(naka(r), r.no+' '+r.name, '路線のまん中あたり（目安）');
+    document.getElementById('shosai').scrollIntoView({ behavior:'smooth', block:'start' });
+  } else if(x.dataset.k){
+    jo[x.dataset.k] = x.dataset.k==='dai' ? Number(x.dataset.v) : x.dataset.v; shosai();
+  } else if(x.dataset.ku !== undefined){
+    const k = TEBIKI[ima].kukan[+x.dataset.ku], p = x.dataset.te !== undefined ? k.ten[+x.dataset.te] : null;
+    chizu(p ? p.pin : k.pin, ima+'-'+(+x.dataset.ku+1)+' '+k.na, p ? FUDA[p.fuda]+'：'+p.doko+'（目印の場所・目安）' : '区間の目印（目安）');
+    document.getElementById('chizu').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+});
+/* ホームから渡された名前（#w=名前）は、もどる時にそのまま返す */
+if(/[#&]w=/.test(location.hash||'')) document.getElementById('modoru').href = '../' + location.hash;
+rosenList();
+zentai();
+</script>
+</body>
+</html>
