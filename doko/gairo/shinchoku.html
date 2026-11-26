@@ -41,11 +41,12 @@
 </style>
 </head>
 <body>
-<div class="chui">お試しです。押した中身は、このスマホの中だけに残ります（ほかの人には見えません）。</div>
+<div class="chui">お試しです。押した中身は、この画面を開いたみんなが同じ物を見ます。</div>
 <header class="head"><div class="wrap">
   <span class="badge">豊田街路 進み具合</span><span class="ki" aria-hidden="true">🌲</span>
   <h1><em id="hno"></em> <span id="hna"></span></h1>
   <p class="lead">マスを押すと 完了 → 途中 → なし と変わります。途中はバーを指で動かして、何％くらいかを入れます。</p>
+  <p class="lead" id="jotai" style="font-weight:bold;color:#2e5d34"></p>
 </div></header>
 <main><div class="wrap">
   <section><h2><em>作業</em>と日</h2>
@@ -56,6 +57,7 @@
     <div class="narabi" style="margin-bottom:8px">
       <button class="btn kaku" id="matomete">まとめて塗る（2つ押す）</button>
       <button class="btn kaku" id="naosu">目印を直す</button>
+      <button class="btn kaku" id="saishin">最新にする</button>
     </div>
     <div class="obi"><p class="hashi" id="kita"></p><div id="obi"></div><p class="hashi" id="minami"></p></div>
     <p class="hanrei"><span style="background:#2e5d34;color:#fff">完了</span><span style="background:#f1dfa0;border:1px solid #c8a24a">途中</span>島の数は ＋ − で合わせます。</p>
@@ -80,7 +82,36 @@ const H = HAJIME[R.no] || { kita:'始まりの側', minami:'終わりの側', ga
 let S = {}; try { S = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch(e){ S = {}; }
 const D = S[R.no] = S[R.no] || {};
 D.me = D.me || H.me.slice(); D.shima = D.shima || {}; D.nuri = D.nuri || {}; D.pct = D.pct || {}; D.sagyo = D.sagyo || '高木剪定'; D.hi = D.hi || ''; D.gawa = D.gawa || H.gawa[0][0];
+/* みんなで見る入れ物（Google Apps Script・進み具合だけを置く）。スマホの中の控えも今までどおり残す */
+const KYOYU = 'https://script.google.com/macros/s/AKfycbwKk15Z5rn3cMhHIHpW2QcDkxOO2c5VC0jP4GJXS1X_m3Vn63VdsL1rLs4YHPV1mOce/exec';
+let okuriT = 0, okuriChu = false;
+function jotai(s){ const e = document.getElementById('jotai'); if(e) e.textContent = s; }
+function dare(){
+  const m = /[#&]w=([^&]+)/.exec(location.hash || ''); if(m){ try { return decodeURIComponent(m[1]); } catch(e){ return m[1]; } }
+  if(!S.na){ const n = prompt('名前を入れてください（だれが書いたか、みんなに出ます）', ''); S.na = (n || '').trim().slice(0, 20) || '名前なし'; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+  return S.na;
+}
+function ukeru(d){ if(!d || !Array.isArray(d.me)) return false; D.me = d.me; D.shima = d.shima || {}; D.nuri = d.nuri || {}; D.pct = d.pct || {}; D.v = d.v || 0; D.itsu = d.itsu || ''; D.dare = d.dare || ''; return true; }
+function yomu(){
+  if(okuriT || okuriChu) return Promise.resolve();
+  jotai('みんなの最新を読んでいます…');
+  return fetch(KYOYU + '?r=' + R.no + '&t=' + Date.now()).then(r=>r.json()).then(j=>{
+    if(j && j.ok && ukeru(j.d)){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} draw(); jotai('みんなの最新：' + D.itsu + '　' + D.dare); }
+    else jotai('まだだれも書いていません（押すと、みんなに出ます）');
+  }).catch(()=>jotai('電波が弱くて読めませんでした。このスマホの中の控えを出しています'));
+}
+function okuru(){
+  okuriT = 0; okuriChu = true; jotai('みんなに送っています…');
+  const mae = D.v || 0;
+  fetch(KYOYU, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify({ r:R.no, dare:dare(), d:{ me:D.me, shima:D.shima, nuri:D.nuri, pct:D.pct } }) })
+    .then(r=>r.json()).then(j=>{
+      okuriChu = false; if(!j || !j.ok) throw 0;
+      D.v = j.v; D.itsu = j.itsu; D.dare = j.dare; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){}
+      jotai(j.mae !== mae ? '送りました。ほかの人も書いていたので、［最新にする］を押して確かめてください' : 'みんなに送りました：' + j.itsu + '　' + j.dare);
+    }).catch(()=>{ okuriChu = false; jotai('送れませんでした（電波）。もう一度どこかを押すと送り直します'); });
+}
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+function saveK(){ save(); clearTimeout(okuriT); okuriT = setTimeout(okuru, 1200); jotai('書いています…'); }
 function esc(t){ return String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 const $ = id=>document.getElementById(id);
 let matome = false, hajimari = null, naoshi = false;
@@ -137,6 +168,7 @@ document.addEventListener('click', e=>{
   if(d.g){ D.gawa = d.g; hajimari = null; }
   else if(x.id==='matomete'){ matome = !matome; hajimari = null; }
   else if(x.id==='naosu'){ naoshi = !naoshi; }
+  else if(x.id==='saishin'){ yomu(); return; }
   else if(x.id==='copy'){ const t = $('bun'); t.select(); (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject()).catch(()=>document.execCommand('copy')); x.textContent = 'コピーしました'; setTimeout(()=>x.textContent='文をコピー', 1500); return; }
   else if(x.id==='kesu'){ if(!confirm(gawaOf()[1]+'・'+D.sagyo+' の色を消しますか？')) return; [D.nuri, D.pct].forEach(o=>Object.keys(o).forEach(k=>{ if(k.indexOf(D.gawa+'|'+D.sagyo+'|')===0) delete o[k]; })); }
   else if(d.fu){ D.shima[D.gawa+'|'+d.fu] = Math.min(kazu(+d.fu)+1, 30); }
@@ -151,7 +183,8 @@ document.addEventListener('click', e=>{
         a.slice(Math.min(p,q2), Math.max(p,q2)+1).forEach(q=>D.nuri[nk(q[0],q[1])]='kan'); hajimari = null; matome = false; }
     } else { const k = nk(i,j), v = D.nuri[k] || ''; if(v==='') D.nuri[k]='kan'; else if(v==='kan') D.nuri[k]='tochu'; else { delete D.nuri[k]; delete D.pct[k]; } }
   } else return;
-  save(); draw();
+  if(d.g || x.id==='matomete' || x.id==='naosu') save(); else saveK();
+  draw();
 });
 /* 目印を足す・取る時は、その下の間の番号をずらす（色と島の数がずれないように） */
 function zurasu(kara, n){
@@ -163,7 +196,7 @@ function zurasu(kara, n){
 document.addEventListener('input', e=>{
   const t = e.target; if(t.dataset.pi === undefined) return;
   const i = +t.dataset.pi, j = +t.dataset.pj, v = Math.max(10, Math.min(90, Math.round(+t.value/10)*10));
-  D.pct[nk(i,j)] = v; save();
+  D.pct[nk(i,j)] = v; saveK();
   const b = document.querySelector('.masu button[data-i="'+i+'"][data-j="'+j+'"]');
   if(b){ b.setAttribute('style', nuriE(v)); b.textContent = b.dataset.na + '　途中 ' + v + '%'; }
   bun();
@@ -172,10 +205,11 @@ document.addEventListener('change', e=>{
   const t = e.target;
   if(t.id==='sagyo'){ D.sagyo = t.value; hajimari = null; save(); draw(); }
   else if(t.id==='hi'){ D.hi = t.value.replace(/[^0-9]/g,''); save(); bun(); }
-  else if(t.dataset.me !== undefined){ D.me[+t.dataset.me] = t.value.trim() || '目印'; save(); bun(); }
+  else if(t.dataset.me !== undefined){ D.me[+t.dataset.me] = t.value.trim() || '目印'; saveK(); bun(); }
 });
 if(/[#&]w=/.test(location.hash||'')) $('modoru').href = './' + location.hash;
-draw();
+draw(); yomu();
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) yomu(); });
 </script>
 </body>
 </html>
