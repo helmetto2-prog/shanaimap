@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>みどり造園 どこに何があるかマップ</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root { --sashi:#2e5d34; --shiro:#ffffff; --kinari:#f4f1e8; --moji:#243324; --usui:#dfe6d8; }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; }
+  body { font-family:"Yu Gothic UI","Hiragino Sans",Meiryo,sans-serif; background:var(--kinari); color:var(--moji);
+    display:flex; flex-direction:column; line-height:1.55; }
+  .head { background:var(--shiro); border-bottom:3px solid var(--sashi); padding:10px 14px; display:flex; align-items:center; gap:10px; }
+  .modoru { text-decoration:none; color:var(--sashi); font-weight:bold; font-size:14px; border:2px solid var(--sashi);
+    border-radius:8px; padding:6px 10px; white-space:nowrap; background:var(--shiro); }
+  .badge { display:inline-block; background:var(--sashi); color:#fff; font-size:11px; font-weight:bold;
+    padding:1px 9px; border-radius:3px; letter-spacing:.08em; }
+  h1 { font-size:19px; line-height:1.3; }
+  #map { flex:1; min-height:240px; background:#cfd8c8; }
+  .info { background:var(--shiro); border-top:3px solid var(--sashi); padding:12px 14px 16px; }
+  .info p { font-size:14px; }
+  .info .memo { font-weight:bold; margin-top:2px; }
+  .mono { margin-top:6px; font-size:14px; }
+  .mono b { color:var(--sashi); }
+  .btns { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .btn { flex:1; min-width:140px; text-align:center; text-decoration:none; font-size:15px; font-weight:bold; padding:11px 8px;
+    border-radius:8px; border:2px solid var(--sashi); color:var(--sashi); background:var(--shiro); cursor:pointer; font-family:inherit; }
+  .btn.omo { background:var(--sashi); color:#fff; }
+  .nai { padding:30px 18px; text-align:center; font-size:15px; }
+</style>
+</head>
+<body>
+<header class="head">
+  <a class="modoru" id="modoru" href="./">‹ 一覧</a>
+  <div><span class="badge">どこに何があるかマップ</span><h1 id="namae"></h1></div>
+</header>
+<div id="map"></div>
+<section class="info" id="info"></section>
+
+<script src="basho.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+function esc(t){ return String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+/* アドレスの # の後ろ：b=場所の id ／ w=名前（ホームから渡された物・一覧へ戻る時にそのまま返す） */
+const H = location.hash || '';
+const bid = (/[#&]b=([^&]+)/.exec(H) || [])[1] || '';
+const wm = /[#&](w=[^&]+)/.exec(H);
+document.getElementById('modoru').setAttribute('href', './' + (wm ? '#' + wm[1] : ''));
+const b = BASHO.filter(x=>x.id === bid && x.lat)[0];
+const info = document.getElementById('info');
+if(!b){
+  document.getElementById('namae').textContent = '場所が見つかりません';
+  document.getElementById('map').style.display = 'none';
+  info.innerHTML = '<p class="nai">一覧へ戻って、場所を選び直してください。</p>';
+} else {
+  document.title = 'みどり造園 ' + b.name;
+  document.getElementById('namae').textContent = b.name;
+  const g = 'https://www.google.com/maps/search/?api=1&query=' + b.lat + ',' + b.lng;
+  info.innerHTML =
+    (b.jusho ? '<p>' + esc(b.jusho) + '</p>' : '') +
+    (b.memo ? '<p class="memo">' + esc(b.memo) + '</p>' : '') +
+    (b.items && b.items.length ? '<p class="mono"><b>ある物</b>　' + b.items.map(esc).join('・') + '</p>' : '') +
+    '<div class="btns"><a class="btn omo" target="_blank" rel="noopener" href="' + g + '">Googleマップで開く</a>' +
+    '<button class="btn" id="kirikae" type="button">地図に切りかえ</button></div>';
+  /* 地図＝国土地理院（写真と地図を切りかえ） */
+  const map = L.map('map', { zoomControl:true }).setView([b.lat, b.lng], 17);
+  const at = '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>';
+  const shashin = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg', { maxZoom:19, maxNativeZoom:18, attribution:at });
+  const chizu = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png', { maxZoom:19, maxNativeZoom:18, attribution:at });
+  shashin.addTo(map);
+  L.marker([b.lat, b.lng]).addTo(map).bindTooltip(b.name, { permanent:true, direction:'top', offset:[-15,-12] });
+  let ima = 'shashin';
+  document.getElementById('kirikae').addEventListener('click', function(){
+    if(ima === 'shashin'){ map.removeLayer(shashin); chizu.addTo(map); ima = 'chizu'; this.textContent = '写真に切りかえ'; }
+    else { map.removeLayer(chizu); shashin.addTo(map); ima = 'shashin'; this.textContent = '地図に切りかえ'; }
+  });
+}
+</script>
+</body>
+</html>

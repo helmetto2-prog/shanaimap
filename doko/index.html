@@ -57,19 +57,9 @@
 </main>
 <footer>どこに何があるかマップ ｜ 株式会社みどり造園</footer>
 
+<script src="basho.js"></script>
 <script>
-/* ============================================================
-   場所の一覧。場所を足す時は、この下に1行足す（上から順に 1・2・3… と番号が付く）。
-   name … 画面に出る名前
-   yomi … ひらがなの読み（検索用。「、」で区切っていくつでも）
-   setsu… 名前の下に出る短い説明
-   url  … 押した時に開く地図。まだ無い時は "" にすると「準備中」と出る
-   ============================================================ */
-const BASHO = [
-  { name:"会社（資材置き場）", yomi:"かいしゃ、しざいおきば、しゃないまっぷ、ほんしゃ", setsu:"今までの社内マップ。道具や材料の置き場所", url:"../" },
-  { name:"若林の土場", yomi:"わかばやしのどば、わかばやし、どば", setsu:"場所の地図", url:"" },
-  { name:"刈谷の土場", yomi:"かりやのどば、かりや、どば", setsu:"場所の地図", url:"" }
-];
+/* 場所の一覧は basho.js（場所を足す時はそちらに足す） */
 
 /* ホームから渡された名前（#w=名前）は、そのまま次の地図へ渡す */
 const HASH = /[#&]w=/.test(location.hash||'') ? location.hash : '';
@@ -83,12 +73,14 @@ function draw(){
   const q = norm(document.getElementById('q').value);
   let n = 0, h = '';
   BASHO.forEach((b,i)=>{
-    if(q && norm(b.name+'|'+b.yomi).indexOf(q) < 0) return;
+    if(q && norm(b.name+'|'+b.yomi+'|'+(b.jusho||'')+'|'+(b.items||[]).join('|')).indexOf(q) < 0) return;
     n++;
+    /* 行き先：url があればそこ・緯度経度があれば地図のページ・どちらも無ければ準備中 */
+    const saki = b.url ? b.url + HASH : (b.lat ? 'chizu.html#b=' + b.id + (HASH ? '&' + HASH.replace(/^#/,'') : '') : '');
     const naka = '<span class="num">'+(i+1)+'</span><span class="body"><span class="name">'+esc(b.name)+
-      (b.url ? '' : '<span class="mada-fuda">準備中</span>')+'</span><br><span class="setsu">'+esc(b.setsu)+'</span></span>';
-    h += b.url
-      ? '<li><a class="card" href="'+esc(b.url+HASH)+'">'+naka+'<span class="ya">›</span></a></li>'
+      (saki ? '' : '<span class="mada-fuda">準備中</span>')+'</span><br><span class="setsu">'+esc(b.setsu)+'</span></span>';
+    h += saki
+      ? '<li><a class="card" href="'+esc(saki)+'">'+naka+'<span class="ya">›</span></a></li>'
       : '<li><div class="card mada">'+naka+'</div></li>';
   });
   list.innerHTML = h;
