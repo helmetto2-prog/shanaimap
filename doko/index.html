@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>みどり造園 どこに何があるかマップ</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
   :root { --sashi:#2e5d34; --shiro:#ffffff; --kinari:#f4f1e8; --moji:#243324; --kin:#c8a24a; --usui:#dfe6d8; }
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -35,6 +36,15 @@
   .card.mada .name { color:#6b786b; }
   .mada-fuda { display:inline-block; font-size:11px; font-weight:bold; color:var(--sashi); border:1px solid var(--sashi);
     border-radius:3px; padding:0 7px; margin-left:8px; vertical-align:2px; background:var(--shiro); }
+  .erabu { margin-top:10px; }
+  .erabu select { width:100%; font-size:16px; padding:10px 12px; border:2px solid var(--sashi); border-radius:8px;
+    background:var(--shiro); color:var(--moji); font-family:inherit; }
+  #zentai { height:46vh; min-height:260px; background:#cfd8c8; border-bottom:3px solid var(--sashi); }
+  .fuki b { font-size:15px; } .fuki p { margin:4px 0 0; font-size:13px; line-height:1.5; }
+  .fuki a { display:inline-block; margin:8px 8px 0 0; font-size:14px; font-weight:bold; color:#fff; background:var(--sashi);
+    padding:7px 12px; border-radius:6px; text-decoration:none; }
+  .fuki a.sub { color:var(--sashi); background:var(--shiro); border:2px solid var(--sashi); padding:5px 10px; }
+  .leaflet-tooltip.na { font-weight:bold; font-size:12px; padding:1px 6px; }
   .nai { display:none; font-size:14px; padding:14px; text-align:center; }
   footer { font-size:12px; text-align:center; padding:8px 18px 26px; color:#5d6b5d; }
 </style>
@@ -45,10 +55,12 @@
     <span class="badge">みどり造園のマップ</span>
     <span class="ki" aria-hidden="true">🌲</span>
     <h1><em>どこに何があるか</em>マップ</h1>
-    <p class="lead">見たい場所を押すと、その場所の地図が開きます。</p>
+    <p class="lead">地図のピンか、下の一覧から場所を選べます。</p>
     <div class="search"><input id="q" type="text" placeholder="場所の名前で探す（ひらがなで）" autocomplete="off"></div>
+    <div class="erabu"><select id="sel" aria-label="場所を選ぶ"></select></div>
   </div>
 </header>
+<div id="zentai"></div>
 <main>
   <div class="wrap">
     <ul class="list" id="list"></ul>
@@ -58,6 +70,7 @@
 <footer>どこに何があるかマップ ｜ 株式会社みどり造園</footer>
 
 <script src="basho.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 /* 場所の一覧は basho.js（場所を足す時はそちらに足す） */
 
@@ -86,8 +99,43 @@ function draw(){
   list.innerHTML = h;
   nai.style.display = n ? 'none' : 'block';
 }
-document.getElementById('q').addEventListener('input', draw);
-draw();
+/* 行き先（一覧のカードと同じ決め方） */
+function sakiOf(b){ return b.url ? b.url + HASH : (b.lat ? 'chizu.html#b=' + b.id + (HASH ? '&' + HASH.replace(/^#/,'') : '') : ''); }
+function ataru(b, q){ return !q || norm(b.name+'|'+b.yomi+'|'+(b.jusho||'')+'|'+(b.items||[]).join('|')).indexOf(q) >= 0; }
+
+/* ぜんぶの場所を1枚の地図に（国土地理院の地図）。ピンを押すと名前と行き方が出る */
+const map = L.map('zentai');
+L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png', { maxZoom:18,
+  attribution:'<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>' }).addTo(map);
+const PIN = {};
+BASHO.forEach((b,i)=>{
+  if(!b.lat) return;
+  const g = 'https://www.google.com/maps/search/?api=1&query=' + b.lat + ',' + b.lng;
+  const s = sakiOf(b);
+  const m = L.marker([b.lat, b.lng]).bindTooltip((i+1) + ' ' + b.name, { permanent:true, direction:'top', offset:[-15,-12], className:'na' })
+    .bindPopup('<div class="fuki"><b>' + (i+1) + '　' + esc(b.name) + '</b><p>' + esc(b.setsu||'') + '</p>' +
+      (s ? '<a href="' + esc(s) + '">くわしく見る</a>' : '') +
+      '<a class="sub" target="_blank" rel="noopener" href="' + g + '">Googleマップで開く</a></div>');
+  PIN[b.id] = m;
+});
+function pins(){
+  const q = norm(document.getElementById('q').value), ll = [];
+  BASHO.forEach(b=>{ const m = PIN[b.id]; if(!m) return;
+    if(ataru(b,q)){ m.addTo(map); ll.push(m.getLatLng()); } else { map.removeLayer(m); } });
+  if(ll.length === 1) map.setView(ll[0], 15, {animate:false}); else if(ll.length) map.fitBounds(L.latLngBounds(ll).pad(0.15), {animate:false});
+}
+/* 選ぶ方法：場所の名前の一覧から選ぶと、地図がそこへ動いてふきだしが開く */
+const sel = document.getElementById('sel');
+sel.innerHTML = '<option value="">場所を選ぶ（' + BASHO.length + 'か所）</option>' +
+  BASHO.map((b,i)=>'<option value="' + b.id + '">' + (i+1) + '　' + esc(b.name) + '</option>').join('');
+sel.addEventListener('change', function(){
+  const m = PIN[this.value]; if(!m) return;
+  document.getElementById('q').value = ''; draw(); pins();
+  map.setView(m.getLatLng(), 16, {animate:false}); m.openPopup();
+  document.getElementById('zentai').scrollIntoView({ behavior:'smooth', block:'start' });
+});
+document.getElementById('q').addEventListener('input', function(){ sel.value = ''; draw(); pins(); });
+draw(); pins();
 </script>
 </body>
 </html>
