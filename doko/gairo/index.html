@@ -44,7 +44,7 @@
   .ten { padding:9px 12px; border-top:1px solid var(--usui); font-size:14px; }
   .fuda { display:inline-block; font-size:12px; font-weight:bold; padding:1px 9px; border-radius:3px; background:var(--sashi); color:#fff; margin-right:6px; }
   .fuda.dame, .fuda.chui { background:var(--dame); }
-  .fuda.mawaru, .fuda.jikan, .fuda.guard, .fuda.hajime { background:var(--shiro); color:var(--sashi); border:1px solid var(--sashi); }
+  .fuda.mawaru, .fuda.jikan, .fuda.guard, .fuda.hajime, .fuda.sagyo { background:var(--shiro); color:var(--sashi); border:1px solid var(--sashi); }
   .jo { display:inline-block; font-size:12px; border:1px solid #c8a24a; background:#fff7d6; border-radius:3px; padding:0 7px; margin-left:4px; }
   .riyu { font-size:12px; color:#5d6b5d; } .ten .btn { font-size:12px; padding:4px 9px; margin-top:5px; }
   .ten.kieru { display:none; }
@@ -69,7 +69,7 @@
 <script src="rosen.js"></script>
 <script src="tebiki.js"></script>
 <script>
-const FUDA = { tomeru:'停める', dame:'停めない', mawaru:'回る道', chui:'注意', guard:'ガードマン', jikan:'時間', hajime:'始まり' };
+const FUDA = { tomeru:'停める', dame:'停めない', mawaru:'回る道', chui:'注意', guard:'ガードマン', jikan:'時間', hajime:'始まり', sagyo:'作業' };
 function esc(t){ return String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 const jo = { dai:0, kuruma:'' };   // 選んだ条件（0・'' は全部）
 let ima = '';
@@ -113,10 +113,11 @@ function shosai(){
   let h = '<h2><em>'+r.no+'</em> '+esc(r.name)+'（約'+r.nagasa+'m）</h2>';
   if(!t){ el.innerHTML = h + '<div class="hako">この路線の手引きは準備中です。</div>'; return; }
   h += '<table><tr><th>作業</th><th>回</th><th>月</th><th>日数</th><th>人数</th><th>延べ</th></tr>'+
-    t.meyasu.map(m=>'<tr><td>'+m.shu+'</td><td>'+m.kai+'</td><td>'+m.tsuki+'</td><td>'+m.hi+'</td><td>'+m.nin+'</td><td>'+m.nobe+'人</td></tr>').join('')+'</table>';
+    t.meyasu.map(m=>'<tr><td>'+m.shu+'</td><td>'+m.kai+'</td><td>'+m.tsuki+'</td><td>'+m.hi+'</td><td>'+m.nin+'</td><td>'+m.nobe+'人'+(m.biko?'<br><small>'+esc(m.biko)+'</small>':'')+'</td></tr>').join('')+'</table>';
   const b = (k,v,na)=>'<button data-k="'+k+'" data-v="'+v+'" class="'+(String(jo[k])===String(v)?'on':'')+'">'+na+'</button>';
   h += '<div class="erabu">今日の車：'+b('dai',0,'全部')+b('dai',1,'1台')+b('dai',2,'2台')+'</div>'+
        '<div class="erabu">車の種類：'+b('kuruma','','全部')+b('kuruma','kei','軽')+b('kuruma','toyo','トヨエース')+'</div>';
+  if(!t.kukan.length) h += '<div class="hako" style="margin-top:12px">この路線は、手引きに注意書きがまだありません（地図だけ）。街路の共通の決まりを守って停めます。</div>';
   t.kukan.forEach((k,i)=>{
     h += '<div class="kukan"><h3><span class="num">'+(i+1)+'</span>'+esc(k.na)+'<button class="btn sub" data-ku="'+i+'">地図</button></h3>'+
       k.ten.map((p,j)=>'<div class="ten'+(ataru(p)?'':' kieru')+'"><span class="fuda '+p.fuda+'">'+FUDA[p.fuda]+'</span><b>'+esc(p.doko)+'</b>'+joFuda(p)+
@@ -136,7 +137,7 @@ document.addEventListener('click', e=>{
     jo[x.dataset.k] = x.dataset.k==='dai' ? Number(x.dataset.v) : x.dataset.v; shosai();
   } else if(x.dataset.ku !== undefined){
     const k = TEBIKI[ima].kukan[+x.dataset.ku], p = x.dataset.te !== undefined ? k.ten[+x.dataset.te] : null;
-    chizu(p ? p.pin : k.pin, ima+'-'+(+x.dataset.ku+1)+' '+k.na, p ? FUDA[p.fuda]+'：'+p.doko+'（目印の場所・目安）' : '区間の目印（目安）');
+    chizu(p ? p.pin : (k.pin || naka(ROSEN.filter(q=>q.no===ima)[0])), ima+'-'+(+x.dataset.ku+1)+' '+k.na, p ? FUDA[p.fuda]+'：'+p.doko+'（目印の場所・目安）' : (k.pin ? '区間の目印（目安）' : '路線のまん中あたり（目安）'));
     document.getElementById('chizu').scrollIntoView({ behavior:'smooth', block:'start' });
   }
 });
