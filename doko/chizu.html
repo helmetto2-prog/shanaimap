@@ -43,6 +43,7 @@
 <script>
 function esc(t){ return String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 /* アドレスの # の後ろ：b=場所の id ／ w=名前（ホームから渡された物・一覧へ戻る時にそのまま返す） */
+window.addEventListener('hashchange', function(){ location.reload(); });   // 場所だけ変わった時は読み直す
 const H = location.hash || '';
 const bid = (/[#&]b=([^&]+)/.exec(H) || [])[1] || '';
 const wm = /[#&](w=[^&]+)/.exec(H);
