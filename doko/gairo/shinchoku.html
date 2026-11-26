@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>豊田街路 進み具合（お試し）</title>
+<style>
+  :root { --sashi:#2e5d34; --shiro:#fff; --kinari:#f4f1e8; --moji:#243324; --usui:#dfe6d8; --tochu:#c8a24a; }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { font-family:"Yu Gothic UI","Hiragino Sans",Meiryo,sans-serif; background:var(--kinari); color:var(--moji); line-height:1.6; }
+  .wrap { max-width:560px; margin:0 auto; }
+  .head { background:var(--shiro); border-bottom:3px solid var(--sashi); padding:14px 16px 12px; position:relative; }
+  .badge { display:inline-block; background:var(--sashi); color:#fff; font-size:12px; font-weight:bold; padding:3px 12px; border-radius:3px; letter-spacing:.08em; }
+  h1 { font-size:21px; margin-top:6px; } h1 em { font-style:normal; color:var(--sashi); }
+  .lead { font-size:13px; margin-top:2px; } .ki { position:absolute; right:14px; top:12px; font-size:26px; }
+  .chui { background:#fff7d6; border:1px solid var(--tochu); font-size:12px; padding:6px 12px; text-align:center; }
+  main { padding:14px 16px 30px; } section { margin-bottom:18px; }
+  h2 { font-size:15px; margin-bottom:6px; } h2 em { font-style:normal; color:var(--sashi); }
+  select, input[type=number], input[type=text] { font-family:inherit; font-size:16px; padding:8px 10px; border:2px solid var(--sashi); border-radius:8px; background:var(--shiro); color:var(--moji); }
+  .narabi { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .tab { display:flex; gap:6px; flex-wrap:wrap; }
+  .tab button, .btn { font-family:inherit; font-size:14px; font-weight:bold; padding:7px 12px; border-radius:20px; border:2px solid var(--sashi); background:var(--shiro); color:var(--sashi); }
+  .tab button.on, .btn.on { background:var(--sashi); color:#fff; }
+  .btn.kaku { border-radius:6px; } .btn.chiisai { font-size:12px; padding:3px 9px; }
+  .obi { background:var(--shiro); border:1px solid var(--usui); border-radius:8px; padding:10px 10px 10px 14px; }
+  .hashi { font-size:12px; color:#5d6b5d; text-align:center; }
+  .me { display:flex; align-items:center; gap:8px; font-weight:bold; font-size:15px; padding:5px 0; }
+  .me::before { content:""; width:14px; height:14px; border-radius:50%; background:var(--sashi); flex:none; margin-left:13px; }
+  .me .na { flex:1; } .me input { flex:1; min-width:0; font-size:15px; padding:4px 8px; }
+  .aida { display:flex; align-items:stretch; gap:8px; margin-left:18px; border-left:4px solid var(--sashi); padding:4px 0 4px 14px; }
+  .masu { display:flex; flex-direction:column; gap:5px; flex:1; }
+  .masu button { font-family:inherit; font-size:15px; text-align:left; padding:9px 12px; border-radius:8px; border:2px solid var(--usui); background:#fafaf6; color:var(--moji); }
+  .masu button.kan { background:var(--sashi); border-color:var(--sashi); color:#fff; font-weight:bold; }
+  .masu button.tochu { background:repeating-linear-gradient(45deg,#fff7d6,#fff7d6 8px,#f1dfa0 8px,#f1dfa0 16px); border-color:var(--tochu); font-weight:bold; }
+  .masu button.erabi { outline:3px dashed var(--sashi); }
+  .kazu { display:flex; flex-direction:column; gap:4px; justify-content:center; }
+  #bun { width:100%; min-height:110px; font-family:inherit; font-size:15px; padding:10px; border:2px solid var(--sashi); border-radius:8px; background:var(--shiro); color:var(--moji); }
+  .hanrei { font-size:12px; margin-top:6px; } .hanrei span { display:inline-block; padding:0 8px; border-radius:4px; margin-right:6px; }
+  footer { font-size:12px; text-align:center; padding:0 16px 26px; color:#5d6b5d; } footer a { color:var(--sashi); font-weight:bold; }
+</style>
+</head>
+<body>
+<div class="chui">お試しです。押した中身は、このスマホの中だけに残ります（ほかの人には見えません）。</div>
+<header class="head"><div class="wrap">
+  <span class="badge">豊田街路 進み具合</span><span class="ki" aria-hidden="true">🌲</span>
+  <h1><em id="hno"></em> <span id="hna"></span></h1>
+  <p class="lead">マスを押すと 完了 → 途中 → なし と変わります。下に日報の文が出ます。</p>
+</div></header>
+<main><div class="wrap">
+  <section><h2><em>作業</em>と日</h2>
+    <div class="narabi"><select id="sagyo"><option>高木剪定</option><option>除草</option><option>刈込</option><option>草刈</option></select>
+    <input id="hi" type="number" min="1" max="99" inputmode="numeric" style="width:76px" placeholder="何"> 日目</div></section>
+  <section><h2>どの<em>側</em></h2><div class="tab" id="gawa"></div></section>
+  <section><h2><em>ここから・ここまで</em></h2>
+    <div class="narabi" style="margin-bottom:8px">
+      <button class="btn kaku" id="matomete">まとめて塗る（2つ押す）</button>
+      <button class="btn kaku" id="naosu">目印を直す</button>
+    </div>
+    <div class="obi"><p class="hashi" id="kita"></p><div id="obi"></div><p class="hashi" id="minami"></p></div>
+    <p class="hanrei"><span style="background:#2e5d34;color:#fff">完了</span><span style="background:#f1dfa0;border:1px solid #c8a24a">途中</span>島の数は ＋ − で合わせます。</p>
+  </section>
+  <section><h2><em>日報の文</em></h2><textarea id="bun" readonly></textarea>
+    <div class="narabi" style="margin-top:8px"><button class="btn kaku on" id="copy">文をコピー</button><button class="btn kaku" id="kesu">この側の色を消す</button></div></section>
+</div></main>
+<footer><a href="./" id="modoru">← 豊田街路の手引きにもどる</a></footer>
+<script src="rosen.js"></script>
+<script>
+/* 進み具合（お試し）。保存はこのスマホの中だけ＝localStorage の KEY 1つ（ほかのキーは触らない） */
+const KEY = 'gairo_shinchoku_v1';
+/* 路線ごとの はじめの形。目印は北（上）から南（下）へ。現場で「目印を直す」から直せる */
+const HAJIME = {
+  '702': { kita:'北（小坂町・稲垣農園の側）', minami:'南（白頭山・新生公園の側）',
+    gawa:[['chuo','中央分離帯','島'],['higashi','東側の植樹帯','マス'],['nishi','西側の植樹帯','マス']],
+    me:['北の端（小坂町）','国道153号の交差点（エディオン）','豊田西高','朝日丘中','ホテルルートイン','新生公園','南の端（白頭山）'] }
+};
+const no = (new URLSearchParams(location.search).get('r') || '702').replace(/[^0-9]/g,'');
+const R = ROSEN.filter(r=>r.no===no)[0] || ROSEN[0];
+const H = HAJIME[R.no] || { kita:'始まりの側', minami:'終わりの側', gawa:[['chuo','中央分離帯','島'],['hidari','左の植樹帯','マス'],['migi','右の植樹帯','マス']], me:['始まり','終わり'] };
+let S = {}; try { S = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch(e){ S = {}; }
+const D = S[R.no] = S[R.no] || {};
+D.me = D.me || H.me.slice(); D.shima = D.shima || {}; D.nuri = D.nuri || {}; D.sagyo = D.sagyo || '高木剪定'; D.hi = D.hi || ''; D.gawa = D.gawa || H.gawa[0][0];
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+function esc(t){ return String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const $ = id=>document.getElementById(id);
+let matome = false, hajimari = null, naoshi = false;
+function gawaOf(){ return H.gawa.filter(g=>g[0]===D.gawa)[0] || H.gawa[0]; }
+function kazu(i){ return D.shima[D.gawa+'|'+i] || 1; }
+function nk(i,j){ return D.gawa+'|'+D.sagyo+'|'+i+'|'+j; }
+function narabi(){ const a=[]; for(let i=0;i<D.me.length-1;i++) for(let j=0;j<kazu(i);j++) a.push([i,j]); return a; }
+function draw(){
+  $('hno').textContent = R.no; $('hna').textContent = R.name; $('kita').textContent = '↑ ' + H.kita; $('minami').textContent = '↓ ' + H.minami;
+  $('sagyo').value = D.sagyo; $('hi').value = D.hi;
+  $('gawa').innerHTML = H.gawa.map(g=>'<button data-g="'+g[0]+'" class="'+(g[0]===D.gawa?'on':'')+'">'+g[1]+'</button>').join('');
+  $('matomete').className = 'btn kaku' + (matome ? ' on' : ''); $('naosu').className = 'btn kaku' + (naoshi ? ' on' : '');
+  $('naosu').textContent = naoshi ? '直すのを終わる' : '目印を直す';
+  const tani = gawaOf()[2]; let h = '';
+  D.me.forEach((m,i)=>{
+    h += naoshi
+      ? '<div class="me"><input type="text" data-me="'+i+'" value="'+esc(m)+'"><button class="btn chiisai" data-tasu="'+i+'">下に足す</button>'+(D.me.length>2?'<button class="btn chiisai" data-toru="'+i+'">取る</button>':'')+'</div>'
+      : '<div class="me"><span class="na">'+esc(m)+'</span></div>';
+    if(i < D.me.length-1){
+      let b = '';
+      for(let j=0;j<kazu(i);j++){
+        const v = D.nuri[nk(i,j)] || '', er = hajimari && hajimari[0]===i && hajimari[1]===j;
+        b += '<button data-i="'+i+'" data-j="'+j+'" class="'+v+(er?' erabi':'')+'">'+(kazu(i)>1 ? (j+1)+'つめの'+tani : 'この間')+(v==='kan'?'　完了':v==='tochu'?'　途中':'')+'</button>';
+      }
+      h += '<div class="aida"><div class="masu">'+b+'</div><div class="kazu"><button class="btn chiisai" data-fu="'+i+'">＋</button><button class="btn chiisai" data-he="'+i+'">−</button></div></div>';
+    }
+  });
+  $('obi').innerHTML = h; bun();
+}
+function bun(){
+  const g = gawaOf(), tani = g[2], gyo = [];
+  for(let i=0;i<D.me.length-1;i++){
+    const n = kazu(i), aida = D.me[i] + '〜' + D.me[i+1];
+    ['kan','tochu'].forEach(shu=>{
+      const na = shu==='kan' ? '完了' : '途中'; let j = 0;
+      while(j < n){
+        if((D.nuri[nk(i,j)]||'') !== shu){ j++; continue; }
+        let k = j; while(k+1 < n && (D.nuri[nk(i,k+1)]||'') === shu) k++;
+        gyo.push('・' + aida + (n===1 ? '' : (j===0 && k===n-1 ? '　全部（'+n+tani+'）' : '　'+(j===k ? (j+1)+'つめの'+tani : (j+1)+'〜'+(k+1)+'つめの'+tani))) + '　' + na);
+        j = k + 1;
+      }
+    });
+  }
+  $('bun').value = R.no + ' ' + g[1] + ' ' + D.sagyo + (D.hi ? ' ' + D.hi + '日目' : '') + '\n' + (gyo.length ? gyo.join('\n') : '（まだ押していません）');
+}
+document.addEventListener('click', e=>{
+  const x = e.target.closest('button'); if(!x) return; const d = x.dataset;
+  if(d.g){ D.gawa = d.g; hajimari = null; }
+  else if(x.id==='matomete'){ matome = !matome; hajimari = null; }
+  else if(x.id==='naosu'){ naoshi = !naoshi; }
+  else if(x.id==='copy'){ const t = $('bun'); t.select(); (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject()).catch(()=>document.execCommand('copy')); x.textContent = 'コピーしました'; setTimeout(()=>x.textContent='文をコピー', 1500); return; }
+  else if(x.id==='kesu'){ if(!confirm(gawaOf()[1]+'・'+D.sagyo+' の色を消しますか？')) return; Object.keys(D.nuri).forEach(k=>{ if(k.indexOf(D.gawa+'|'+D.sagyo+'|')===0) delete D.nuri[k]; }); }
+  else if(d.fu){ D.shima[D.gawa+'|'+d.fu] = Math.min(kazu(+d.fu)+1, 30); }
+  else if(d.he){ const i=+d.he, n=kazu(i); if(n>1){ Object.keys(D.nuri).forEach(k=>{ const p=k.split('|'); if(p[0]===D.gawa && +p[2]===i && +p[3]===n-1) delete D.nuri[k]; }); D.shima[D.gawa+'|'+i] = n-1; } }
+  else if(d.tasu){ D.me.splice(+d.tasu+1, 0, '新しい目印'); zurasu(+d.tasu+1, 1); }
+  else if(d.toru){ if(!confirm('「'+D.me[+d.toru]+'」を取りますか？')) return; D.me.splice(+d.toru, 1); zurasu(+d.toru, -1); }
+  else if(d.i !== undefined){
+    const i=+d.i, j=+d.j;
+    if(matome){
+      if(!hajimari){ hajimari = [i,j]; }
+      else { const a = narabi(), p = a.findIndex(q=>q[0]===hajimari[0]&&q[1]===hajimari[1]), q2 = a.findIndex(q=>q[0]===i&&q[1]===j);
+        a.slice(Math.min(p,q2), Math.max(p,q2)+1).forEach(q=>D.nuri[nk(q[0],q[1])]='kan'); hajimari = null; matome = false; }
+    } else { const k = nk(i,j), v = D.nuri[k] || ''; if(v==='') D.nuri[k]='kan'; else if(v==='kan') D.nuri[k]='tochu'; else delete D.nuri[k]; }
+  } else return;
+  save(); draw();
+});
+/* 目印を足す・取る時は、その下の間の番号をずらす（色と島の数がずれないように） */
+function zurasu(kara, n){
+  const f = (o, pos)=>{ const nw = {}; Object.keys(o).forEach(k=>{ const p = k.split('|'); let i = +p[pos];
+      if(n < 0 && i === kara) return; if(i >= kara) i += n; if(i < 0) return; p[pos] = i; nw[p.join('|')] = o[k]; }); return nw; };
+  D.shima = f(D.shima, 1); D.nuri = f(D.nuri, 2);
+}
+document.addEventListener('change', e=>{
+  const t = e.target;
+  if(t.id==='sagyo'){ D.sagyo = t.value; hajimari = null; save(); draw(); }
+  else if(t.id==='hi'){ D.hi = t.value.replace(/[^0-9]/g,''); save(); bun(); }
+  else if(t.dataset.me !== undefined){ D.me[+t.dataset.me] = t.value.trim() || '目印'; save(); bun(); }
+});
+if(/[#&]w=/.test(location.hash||'')) $('modoru').href = './' + location.hash;
+draw();
+</script>
+</body>
+</html>

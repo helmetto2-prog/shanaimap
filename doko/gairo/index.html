@@ -114,6 +114,7 @@ function shosai(){
   if(!t){ el.innerHTML = h + '<div class="hako">この路線の手引きは準備中です。</div>'; return; }
   h += '<table><tr><th>作業</th><th>回</th><th>月</th><th>日数</th><th>人数</th><th>延べ</th></tr>'+
     t.meyasu.map(m=>'<tr><td>'+m.shu+'</td><td>'+m.kai+'</td><td>'+m.tsuki+'</td><td>'+m.hi+'</td><td>'+m.nin+'</td><td>'+m.nobe+'人'+(m.biko?'<br><small>'+esc(m.biko)+'</small>':'')+'</td></tr>').join('')+'</table>';
+  h += '<a class="btn" href="shinchoku.html?r='+r.no+(/[#&]w=/.test(location.hash||'')?location.hash:'')+'">進み具合を書く（お試し）</a>';
   const b = (k,v,na)=>'<button data-k="'+k+'" data-v="'+v+'" class="'+(String(jo[k])===String(v)?'on':'')+'">'+na+'</button>';
   h += '<div class="erabu">今日の車：'+b('dai',0,'全部')+b('dai',1,'1台')+b('dai',2,'2台')+'</div>'+
        '<div class="erabu">車の種類：'+b('kuruma','','全部')+b('kuruma','kei','軽')+b('kuruma','toyo','トヨエース')+'</div>';
